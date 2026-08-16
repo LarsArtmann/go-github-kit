@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -137,33 +138,99 @@ func TestETagCacheSeparatesCredentials(t *testing.T) {
 func TestETagCacheEvictsOldest(t *testing.T) {
 	t.Parallel()
 
-	cache := NewETagCache(ETagOptions{MaxEntries: 2})
+	next := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		etag := `"tag-` + req.URL.Path + `"`
 
-	for i := range 5 {
-		cache.set("key", etagEntry{etag: `"v"`, body: []byte{byte(i)}})
-		stats := cache.Stats()
-
-		if stats.Entries > 2 {
-			t.Fatalf("entries = %d, exceeds max", stats.Entries)
+		if req.Header.Get("If-None-Match") == etag {
+			return stubRevalidation(req, etag), nil
 		}
+
+		return stubOKResponse(req, etag, "body of "+req.URL.Path), nil
+	})
+
+	cache := NewETagCache(ETagOptions{MaxEntries: 2})
+	client := &http.Client{Transport: cache.wrap(next)}
+
+	getBody := func(t *testing.T, path string) string {
+		t.Helper()
+
+		req, reqErr := http.NewRequestWithContext(t.Context(), http.MethodGet, stubBaseURL+path, nil)
+		if reqErr != nil {
+			t.Fatalf("build GET %s: %v", path, reqErr)
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatalf("GET %s: %v", path, err)
+		}
+
+		defer func() { _ = resp.Body.Close() }()
+
+		data, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			t.Fatalf("read %s: %v", path, readErr)
+		}
+
+		return string(data)
 	}
 
-	cache.set("k1", etagEntry{etag: `"1"`})
-	cache.set("k2", etagEntry{etag: `"2"`})
-	cache.set("k3", etagEntry{etag: `"3"`})
-
-	stats := cache.Stats()
-	if stats.Entries != 2 {
-		t.Fatalf("entries = %d, want 2", stats.Entries)
+	for _, path := range []string{"/one", "/two", "/three"} {
+		getBody(t, path)
 	}
 
-	if _, ok := cache.get("k1"); ok {
-		t.Error("k1 should have been evicted first")
+	if entries := cache.Stats().Entries; entries != 2 {
+		t.Fatalf("entries = %d, want 2 after three stores with MaxEntries 2", entries)
 	}
 
-	if _, ok := cache.get("k3"); !ok {
-		t.Error("k3 must be present")
+	// /one was evicted first: its revalidation carries no validator, so the
+	// stub answers with a fresh 200 body instead of a 304 rebuild.
+	if body := getBody(t, "/one"); body != "body of /one" {
+		t.Errorf("evicted entry re-request = %q, want fresh body", body)
 	}
+
+	if hits := cache.Stats().Hits; hits != 0 {
+		t.Errorf("hits = %d, want 0 (no entry was cached for revalidation)", hits)
+	}
+}
+
+// stubBaseURL is the base URL stub responses report as their origin; the
+// etagclient transport never dials it because next is a stub.
+const stubBaseURL = "https://example.test"
+
+// stubOKResponse builds a 200 carrying etag and body.
+func stubOKResponse(req *http.Request, etag, body string) *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Status:     "200 OK",
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     stubHeader("ETag", etag),
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Request:    req,
+	}
+}
+
+// stubRevalidation builds the 304 answering a known validator.
+func stubRevalidation(req *http.Request, etag string) *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusNotModified,
+		Status:     "304 Not Modified",
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     stubHeader("ETag", etag),
+		Body:       http.NoBody,
+		Request:    req,
+	}
+}
+
+// stubHeader builds a canonicalized single-entry header map.
+func stubHeader(name, value string) http.Header {
+	header := http.Header{}
+	header.Set(name, value)
+
+	return header
 }
 
 func TestETagSkipsNonGET(t *testing.T) {

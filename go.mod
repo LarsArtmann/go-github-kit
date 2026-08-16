@@ -4,6 +4,7 @@ go 1.26.5
 
 require (
 	github.com/google/go-github/v69 v69.2.0
+	github.com/larsartmann/go-etag v0.1.1
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 )
@@ -234,3 +235,8 @@ tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	golang.org/x/perf/cmd/benchstat
 )
+
+// Temporary until go-etag v0.2.0 is tagged: the client/ package this kit now
+// builds on exists only on master. Drop this replace and pin v0.2.0+ on
+// release.
+replace github.com/larsartmann/go-etag => ../go-etag

@@ -75,7 +75,7 @@ func New(opts ...Option) (*Kernel, error) {
 
 	if options.ETag != nil {
 		etagCache = NewETagCache(*options.ETag)
-		stack = newETagTransport(stack, etagCache)
+		stack = etagCache.wrap(stack)
 	}
 
 	stack = newRetryTransport(stack, options.Retry, options.clock)

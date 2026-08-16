@@ -132,6 +132,7 @@ linters:
             - $module
             - github.com/LarsArtmann/go-github-kit # root-package self-imports in tests
             - github.com/google/go-github/v69
+            - github.com/larsartmann/go-etag
             - github.com/onsi/ginkgo/v2
             - github.com/onsi/gomega
     exhaustruct:
@@ -141,6 +142,8 @@ linters:
         # mean "no information", options merge field-by-field, and transport
         # structs are tuned, not exhausted.
         - github.com/LarsArtmann/go-github-kit\.(RateLimitSnapshot|ETagStats|ETagCache|ETagOptions|Options|StatusError|RateLimitOptions|RetryOptions|RateLimitCache|rateProber|gateTransport|feedTransport|retryTransport|etagTransport)
+        - etagclient\.Stats
+        - github.com/larsartmann/go-etag/client\.Stats
         - net/http\.(Transport|Client|Response)
     goconst:
       min-occurrences: 4

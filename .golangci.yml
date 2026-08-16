@@ -155,6 +155,12 @@ linters:
         - ifElseChain
     gomoddirectives:
       replace-local: true
+    govet:
+      disable:
+        # stdversion flags every encoding/json/v2 call as a go1.27 API (v2
+        # lands officially in 1.27); this repo intentionally uses it under
+        # GOEXPERIMENT=jsonv2 on the 1.26 toolchain.
+        - stdversion
     ireturn:
       allow:
         - error

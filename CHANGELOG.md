@@ -13,6 +13,16 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
 
 ### Changed
 
+- Nothing yet.
+
+## [0.2.0] - 2026-08-16
+
+### Changed
+
+- ETag conditional caching is now built on `github.com/larsartmann/go-etag/client`
+  (`etagclient.Transport`): the public surface (`NewETagCache`, `ETagOptions`,
+  `ETagStats`) is unchanged and `ETagStats` is now an alias for
+  `etagclient.Stats`. The module requires `go-etag v0.2.0`.
 - Test helpers no longer import `encoding/json/v2`; the suite now builds
   and runs without `GOEXPERIMENT=jsonv2`. Also fixes the CI golangci-lint
   findings on a fresh checkout (`stdversion` on `json.MarshalWrite`,
@@ -57,5 +67,6 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
   classification, budget waiting, retry behavior, and construction; fuzz
   target for `ParseRateLimitHeaders`; runnable godoc examples.
 
-[Unreleased]: https://github.com/LarsArtmann/go-github-kit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/go-github-kit/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/LarsArtmann/go-github-kit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/LarsArtmann/go-github-kit/releases/tag/v0.1.0

@@ -12,6 +12,8 @@ jobs:
   fuzz:
     name: Fuzz parsers
     runs-on: ubuntu-latest
+    env:
+      GOEXPERIMENT: jsonv2
     strategy:
       fail-fast: false
       matrix:

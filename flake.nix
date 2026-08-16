@@ -48,13 +48,14 @@
             };
 
             GOTOOLCHAIN = "local";
+            GOEXPERIMENT = "jsonv2";
           };
 
           packages.default = pkgs.buildGoModule {
             pname = "go-github-kit";
             version = self.rev or self.dirtyRev or "dev";
             src = ./.;
-            vendorHash = "sha256-sMRTzo7Q79WJqZDhZtwT5/09RMQxdN6kZULqsiFegZg=";
+            vendorHash = "sha256-wqtcZ+Nz5S1Qm4hlAufoxgklwkUnc2vWJWvSxATYRA0=";
 
             meta = with lib; {
               description = "Operational kernel over google/go-github: auth, rate limiting, retry, ETag cache";
@@ -77,7 +78,7 @@
                   name = "test";
                   runtimeInputs = [ goPkg ];
                   text = ''
-                    export CGO_ENABLED=0 GOTOOLCHAIN=local
+                    export CGO_ENABLED=0 GOTOOLCHAIN=local GOEXPERIMENT=jsonv2
                     exec go test -race "$@" ./...
                   '';
                 }
@@ -95,7 +96,7 @@
                     pkgs.golangci-lint
                   ];
                   text = ''
-                    export GOTOOLCHAIN=local
+                    export GOTOOLCHAIN=local GOEXPERIMENT=jsonv2
                     exec golangci-lint run ./...
                   '';
                 }

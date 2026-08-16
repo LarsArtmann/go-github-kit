@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Vet + Build + Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      GOEXPERIMENT: jsonv2
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 2
+
+      - name: Vendor-hash drift guard (go.sum ↔ flake.nix)
+        if: matrix.os == 'ubuntu-latest'
+        run: scripts/check-vendor-hash.sh HEAD~1
+
+      - name: Doc links guard (markdown links + file:line citations)
+        if: matrix.os == 'ubuntu-latest'
+        run: scripts/check-doc-links.sh
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify module dependencies
+        run: go mod verify
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test (plain, race + shuffle + count=2)
+        # Ginkgo refuses go test -count>1; the behavior suite runs separately
+        # with its own spec randomization below.
+        run: go test -race -shuffle=on -count=2 -skip '^TestGithubkit$' ./...
+
+      - name: Test (behavior suite + coverage)
+        run: go test -race -shuffle=on -count=1 -ginkgo.randomize-all -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Coverage gate (≥85%)
+        shell: bash
+        run: |
+          go tool cover -func=coverage.out -o=coverage.func
+          total=$(go tool cover -func=coverage.out | grep '^total' | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Total coverage: ${total}%"
+          awk -v c="$total" 'BEGIN { exit (c < 85) ? 1 : 0 }'
+
+      - name: Upload coverage HTML report
+        if: matrix.os == 'ubuntu-latest'
+        run: go tool cover -html=coverage.out -o=coverage.html
+
+      - name: Upload coverage artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-html
+          path: coverage.html
+          retention-days: 30
+
+      - name: golangci-lint
+        run: go tool golangci-lint run --timeout=5m ./...
+
+      - name: govulncheck
+        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1
+        with:
+          go-version-file: go.mod
+
+  flake:
+    name: Nix flake check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Check flake (build + format + vendorHash freshness)
+        run: nix flake check

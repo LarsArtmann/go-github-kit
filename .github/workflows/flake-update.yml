@@ -1,0 +1,46 @@
+name: Update flake lock
+
+on:
+  schedule:
+    - cron: "23 4 1 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  update-lock:
+    name: Bump flake.lock (opens a PR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Update flake.lock
+        run: nix flake update
+
+      - name: Verify the update still builds
+        run: |
+          hash_before=$(grep -o 'vendorHash = "[^"]*"' flake.nix)
+          nix build .#default
+          hash_after=$(grep -o 'vendorHash = "[^"]*"' flake.nix)
+          if [ "$hash_before" != "$hash_after" ]; then
+            echo "::error::flake.lock bump requires a vendorHash change; commit it together"
+            exit 1
+          fi
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
+        with:
+          title: "chore(deps): update flake.lock"
+          body: |
+            Automated monthly nixpkgs refresh.
+
+            CI on this PR runs `nix flake check`; a vendorHash mismatch here
+            means the nixpkgs bump rehashed the vendor derivation — re-derive
+            per CONTRIBUTING.md and push to this branch.
+          branch: deps/flake-lock-update
+          commit-message: "chore(deps): update flake.lock"
+          delete-branch: true

@@ -1,0 +1,18 @@
+goos: linux
+goarch: amd64
+pkg: github.com/LarsArtmann/go-github-kit
+cpu: AMD RYZEN AI MAX+ 395 w/ Radeon 8060S          
+BenchmarkParseRateLimitHeadersCanonical-32    	12634272	        98.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkParseRateLimitHeadersCanonical-32    	12345973	       100.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkParseRateLimitHeadersCanonical-32    	11585323	       102.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkParseRateLimitHeadersCanonical-32    	12420192	        96.63 ns/op	       0 B/op	       0 allocs/op
+BenchmarkParseRateLimitHeadersCanonical-32    	12440121	       100.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkParseRateLimitHeadersCanonical-32    	12270088	       102.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRateLimitCacheUpdateGet-32           	51957745	        21.54 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRateLimitCacheUpdateGet-32           	57284737	        21.52 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRateLimitCacheUpdateGet-32           	54929964	        21.77 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRateLimitCacheUpdateGet-32           	56086863	        22.42 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRateLimitCacheUpdateGet-32           	53514303	        21.52 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRateLimitCacheUpdateGet-32           	53606767	        22.14 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/LarsArtmann/go-github-kit	14.536s

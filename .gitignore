@@ -57,3 +57,34 @@ result
 result-*
 .envrc
 .direnv/
+
+# >>> buildflow-managed (.gitignore) >>>
+# Auto-managed by buildflow. Edit outside these markers; this block is regenerated on `buildflow --fix`.
+
+## Secrets and environment
+*.pem
+*.key
+
+## Databases
+*.db
+*.db-shm
+*.db-wal
+
+## Operating systems
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+## Buildflow artifacts
+audit-log.*
+workflow-audit-log.*
+.buildflow-workflow-baseline.json
+
+## Reports and coverage
+/coverage
+reports/
+
+## Go
+/go-github-kit
+# <<< buildflow-managed (.gitignore) <<<

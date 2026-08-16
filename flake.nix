@@ -54,7 +54,7 @@
             pname = "go-github-kit";
             version = self.rev or self.dirtyRev or "dev";
             src = ./.;
-            vendorHash = "sha256-b9yL+l1dAIDQeb6zdr6h/YEoUJ6san7oWqxlXCPqXoA=";
+            vendorHash = "sha256-sMRTzo7Q79WJqZDhZtwT5/09RMQxdN6kZULqsiFegZg=";
 
             meta = with lib; {
               description = "Operational kernel over google/go-github: auth, rate limiting, retry, ETag cache";

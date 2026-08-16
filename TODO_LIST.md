@@ -10,7 +10,7 @@ renumbered, and deleting an item retires its ID for good.
 
 ## External (waiting on GitHub UI, schedules, or upstream)
 
-- [ ] **T1** Create the `LarsArtmann/go-github-kit` repository, push master,
+- [x] **T1** Create the `LarsArtmann/go-github-kit` repository, push master,
   and watch the first CI run go green on all three matrix legs. 15m
 - [ ] **T2** Install/enable the Renovate app (config validates; inert until
   the GitHub App is installed). 5m — `renovate.json`

@@ -77,7 +77,7 @@
                   name = "test";
                   runtimeInputs = [ goPkg ];
                   text = ''
-                    export CGO_ENABLED=0 GOTOOLCHAIN=local GOEXPERIMENT=jsonv2
+                    export CGO_ENABLED=0 GOTOOLCHAIN=local
                     exec go test -race "$@" ./...
                   '';
                 }

@@ -1,7 +1,7 @@
 package githubkit_test
 
 import (
-	"encoding/json/v2"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -129,16 +129,20 @@ func eventsPage(ids ...string) []map[string]any {
 // writeUser renders the authenticated-user payload.
 func writeUser(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.MarshalWrite(w, map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"login": "octocat",
 		"id":    583231,
-	})
+	}); err != nil {
+		panic(err)
+	}
 }
 
 // writeEvents renders an events list payload.
 func writeEvents(w http.ResponseWriter, events []map[string]any) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.MarshalWrite(w, events)
+	if err := json.NewEncoder(w).Encode(events); err != nil {
+		panic(err)
+	}
 }
 
 // newBDDKernel builds a Kernel against a test server the way a consumer

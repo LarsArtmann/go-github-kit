@@ -11,6 +11,13 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
 
 ## [Unreleased]
 
+### Changed
+
+- Test helpers no longer import `encoding/json/v2`; the suite now builds
+  and runs without `GOEXPERIMENT=jsonv2`. Also fixes the CI golangci-lint
+  findings on a fresh checkout (`stdversion` on `json.MarshalWrite`,
+  `importcomment` on the doc.go package comment).
+
 ## [0.1.0] - 2026-08-16
 
 ### Added

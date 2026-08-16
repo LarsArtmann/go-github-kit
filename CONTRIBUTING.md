@@ -26,12 +26,12 @@ working — `errors_test.go` pins both.
 nix develop       # dev shell: Go, golangci-lint, govulncheck, actionlint
 nix run .#lint    # golangci-lint (~90 linters, see .golangci.yml)
 nix run .#test    # race test via nix
-go test ./...     # full suite (needs GOEXPERIMENT=jsonv2; tests import encoding/json/v2)
+go test ./...     # full suite
 nix flake check   # build + format checks
 ```
 
-No Nix? `GOEXPERIMENT=jsonv2 go build ./... && GOEXPERIMENT=jsonv2 go test -race ./...`
-is the whole gate (the test files import `encoding/json/v2`). CI additionally
+No Nix? `go build ./... && go test -race ./...`
+is the whole gate. CI additionally
 runs the plain tests twice (`-count=2`, state-leak detection), the Ginkgo
 suite once with `-ginkgo.randomize-all` (Ginkgo forbids `go test -count>1`),
 a coverage gate (≥85%), golangci-lint, govulncheck, and `nix flake check`
@@ -54,7 +54,7 @@ the `Benchmark trend` workflow compares every push against it and posts the
 diff to the job summary. To regenerate the baseline:
 
 ```bash
-GOEXPERIMENT=jsonv2 go test -run '^$' -bench . -count 6 . \
+go test -run '^$' -bench . -count 6 . \
   > docs/benchmarks/baseline-benchmarks.txt
 ```
 

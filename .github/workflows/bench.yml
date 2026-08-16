@@ -22,8 +22,6 @@ jobs:
           cache: true
 
       - name: Run benchmarks
-        env:
-          GOEXPERIMENT: jsonv2
         run: go test -run '^$' -bench . -count 6 . > current.txt
 
       - name: Compare against baseline

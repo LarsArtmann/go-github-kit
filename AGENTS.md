@@ -26,10 +26,6 @@ caching, concurrent pagination. Consumers keep native SDK types.
   the kit's gate (floor 10) normally acts first anyway.
 - **The probe stack deliberately excludes the gate** (recursion) **and the
   ETag layer** (a cached probe answer would masquerade as fresh budget).
-- **Tests require `GOEXPERIMENT=jsonv2`** (test files import
-  `encoding/json/v2`); production code builds without it. CI and
-  `nix run .#test` set it; plain `go test` in a shell without it fails to
-  compile the test package.
 - **Retry safety rule**: 429 always retried (GitHub rejects pre-processing);
   5xx only for idempotent methods; POST never.
 - **`errors.AsType` returns `(T, bool)`** — single-value use does not
@@ -46,9 +42,9 @@ caching, concurrent pagination. Consumers keep native SDK types.
 ## Commands
 
 ```bash
-GOEXPERIMENT=jsonv2 go test -race -count=1 ./...   # full suite
+go test -race -count=1 ./...                       # full suite
 nix run .#lint                                     # golangci-lint
-nix run .#test                                     # suite via nix (sets GOEXPERIMENT)
+nix run .#test                                     # suite via nix
 nix flake check                                    # build + format + vendorHash
 scripts/check-doc-links.sh                         # markdown/citation guard
 ```

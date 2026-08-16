@@ -29,4 +29,4 @@
 //	)
 //	// client is a *github.Client: use it exactly as before.
 //	events, _, err := client.Activity.ListEventsPerformedByUser(ctx, "octocat", false, nil)
-package githubkit // import "github.com/LarsArtmann/go-github-kit"
+package githubkit

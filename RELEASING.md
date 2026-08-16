@@ -9,7 +9,7 @@ cheaply.
 1. The full gate is green locally:
 
    ```bash
-   go build ./... && GOEXPERIMENT=jsonv2 go test -race ./... && nix run .#lint && nix flake check
+   go build ./... && go test -race ./... && nix run .#lint && nix flake check
    ```
 
 2. `CHANGELOG.md` has a section for the new version under `[Unreleased]`

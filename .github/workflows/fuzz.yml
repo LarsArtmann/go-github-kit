@@ -28,8 +28,6 @@ jobs:
       - name: Fuzz ${{ matrix.target }} for 90s
         id: fuzz
         continue-on-error: true
-        env:
-          GOEXPERIMENT: jsonv2
         run: |
           set +e
           go test -run '^$' -fuzz '^${{ matrix.target }}$' -fuzztime 90s . 2>&1 | tee fuzz.log

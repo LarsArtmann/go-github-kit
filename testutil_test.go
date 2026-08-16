@@ -2,7 +2,7 @@ package githubkit
 
 import (
 	"context"
-	"encoding/json/v2"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -115,11 +115,12 @@ func (s *recordingServer) totalCalls() int {
 	return total
 }
 
-// writeJSON marshals v with encoding/json/v2 (the repo-wide JSON
-// experiment) and sets the content type.
+// writeJSON marshals v as JSON and sets the content type.
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.MarshalWrite(w, v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		panic(err)
+	}
 }
 
 // setRateHeaders simulates GitHub's X-RateLimit-* family. Both spellings

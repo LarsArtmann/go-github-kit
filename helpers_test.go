@@ -1,7 +1,7 @@
 package githubkit_test
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -129,7 +129,7 @@ func eventsPage(ids ...string) []map[string]any {
 // writeUser renders the authenticated-user payload.
 func writeUser(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]any{
+	if err := json.MarshalWrite(w, map[string]any{
 		"login": "octocat",
 		"id":    583231,
 	}); err != nil {
@@ -140,7 +140,7 @@ func writeUser(w http.ResponseWriter, _ *http.Request) {
 // writeEvents renders an events list payload.
 func writeEvents(w http.ResponseWriter, events []map[string]any) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(events); err != nil {
+	if err := json.MarshalWrite(w, events); err != nil {
 		panic(err)
 	}
 }

@@ -2,7 +2,7 @@ package githubkit
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -118,7 +118,7 @@ func (s *recordingServer) totalCalls() int {
 // writeJSON marshals v as JSON and sets the content type.
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(v); err != nil {
+	if err := json.MarshalWrite(w, v); err != nil {
 		panic(err)
 	}
 }

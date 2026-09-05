@@ -36,9 +36,9 @@ caching, concurrent pagination. Consumers keep native SDK types.
   HALF-EDITED states (a go.mod bump once landed without the matching code).
   Before trusting any commit — local, daemon, or remote — verify the tree
   actually builds: baseline gates are build+test+lint, not a clean `git status`.
-- **treefmt vs templ**: formatters must exclude `*_templ.go`; gofumpt
+- **treefmt vs templ**: formatters must exclude templ-generated files (the `*_templ` suffix); gofumpt
   rewriting templ's generated output makes `templ generate -check`
-  permanently red (fixed in gls flake via `treefmt.settings.excludes`).
+  permanently red (fixed in the gls flake via treefmt excludes).
 - Convention template: `go-crush-data` (CI matrix, golangci config,
   RELEASING/SECURITY/CODEOWNERS, renovate, nightly fuzz, doc-link gate,
   TODO_LIST stable IDs, tag-after-final-commit).

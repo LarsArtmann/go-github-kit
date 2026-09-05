@@ -21,17 +21,22 @@ caching, concurrent pagination. Consumers keep native SDK types.
 - Release state 2026-09-05: kit v0.3.0, go-localsync v0.5.0, and
   go-localsync/provider/github v0.1.0 (submodule tag: `provider/github/v0.1.0`)
   are tagged and pushed. The sbts `m5-adapters` branch is landed on `main`.
-- **go-localsync is PRIVATE**: its tags never reach pkg.go.dev/proxy.
-  Local `go get` of its versions succeeds via git credentials (VCS), NOT via
-  proxy.golang.org — a 404 from the proxy .info endpoint is the tell. Nix
-  sandboxes without credentials cannot fetch it at all; consumers use the
-  mkPreparedSource deps-map pattern. Visibility flips are owner decisions
-  (see ROADMAP non-decisions).
+- **go-localsync is PUBLIC** (owner flipped it 2026-09-05): v0.5.0 and
+  provider/github v0.1.0 resolve from proxy.golang.org (clean-cache
+  `GOPROXY=https://proxy.golang.org GONOPROXY=none go list -m` + sumdb
+  proof; tag hashes match the proxy's Origin) and both render on pkg.go.dev.
+  Every LarsArtmann repo is public now — consumers need no GOPRIVATE, SSH,
+  or PAT auth; github-local-sync dropped its git+ssh inputs +
+  mkPreparedSource deps map the same day. Caveat: pkg.go.dev shows
+  "License: UNKNOWN" (no detectable LICENSE file) and therefore hides
+  provider/github's docs — adding a LICENSE is an owner call.
 - **Private-repo GitHub Actions are billing-blocked** (SK CI run failed in
   3s: "recent account payments have failed or your spending limit needs to
-  be increased"). Kit CI is unaffected (public repo). SK/localsync workflows
-  are enabled and correct; they will run once billing is fixed. sbts CI runs
-  only on `main`/`develop` — now exercised, since `m5-adapters` landed.
+  be increased"). Kit and go-localsync are public — their CI runs normally
+  (localsync's first-ever real runs started 2026-09-05 after the flip and
+  are being debugged there). SK/sbts workflows are enabled and correct;
+  they execute once billing is fixed. sbts CI runs only on
+  `main`/`develop` — now exercised, since `m5-adapters` landed.
 - **The auto-git daemon races agents**: heuristic auto-commits can capture
   HALF-EDITED states (a go.mod bump once landed without the matching code).
   Before trusting any commit — local, daemon, or remote — verify the tree

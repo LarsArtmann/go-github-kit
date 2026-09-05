@@ -46,6 +46,7 @@ new information.
   recurse; a cached probe answer would masquerade as fresh budget. The
   probe stack is deliberately feed+retry only. Decided 2026-08-16.
 - **No visibility flips of private consumer repos by agents.** Publishing
-  a private repo is irreversible once the Go proxy caches a version; the
-  go-localsync (and therefore its provider submodule) proxy visibility
-  stays an owner-level decision. Recorded 2026-09-05.
+  a private repo is irreversible once the Go proxy caches a version; that
+  stays an owner-level decision. The owner made go-localsync public on
+  2026-09-05 (v0.5.0 + provider/github v0.1.0 verified on proxy.golang.org
+  and pkg.go.dev), vindicating the wait. Recorded 2026-09-05.

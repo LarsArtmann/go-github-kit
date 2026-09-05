@@ -27,6 +27,17 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # Keep the discovered corpus between runs: without this, every night
+      # starts from the in-repo seeds and re-explores the same shapes.
+      - name: Restore fuzz corpus
+        if: always()
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
+        with:
+          path: ~/.cache/go-build/fuzz
+          key: fuzz-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: |
+            fuzz-${{ matrix.target }}-
+
       - name: Fuzz ${{ matrix.target }} for 90s
         id: fuzz
         continue-on-error: true

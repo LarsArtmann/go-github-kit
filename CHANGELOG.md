@@ -15,6 +15,12 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
 
 - Nothing yet.
 
+### Changed
+
+- The nightly fuzz workflow persists its corpus via the actions cache, so
+  each run continues from everything previously discovered instead of
+  restarting from the in-repo seeds.
+
 ### Fixed
 
 - Nothing yet.

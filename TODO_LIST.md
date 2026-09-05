@@ -20,8 +20,6 @@ renumbered, and deleting an item retires its ID for good.
       create and approve pull requests" (UI-only — Settings → Actions →
       General → Workflow permissions), then re-run the workflow or open
       the PR from the pushed branch. 5m — `.github/workflows/flake-update.yml`
-- [ ] **T11** Mine nightly fuzz artifacts for corpus seeds once runs exist.
-      ongoing — `.github/workflows/fuzz.yml`
 
 ## Parked (plan-level, tracked in the ecosystem plan — not this repo)
 

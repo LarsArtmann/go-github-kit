@@ -18,31 +18,22 @@ renumbered, and deleting an item retires its ID for good.
       write permissions the bot was denied; the vendorHash guard is proven
       to fire on real drift — trigger `workflow_dispatch` or wait for the
       monthly cron). 5m — `.github/workflows/flake-update.yml`
-
-## High
-
-- [ ] **T6** Migrate Standup-Killer's GitHub integration onto the kit
-      (rewrites the GitHub integration file, deletes the bare-PAT oauth2 path,
-      adopts `FetchPages` for commits). Phase 2 of the extraction plan. 2h —
-      `~/projects/Standup-Killer`
-- [ ] **T7** Migrate Standup-Killer's OpenAI client to charm.land/fantasy
-      (drops `sashabaranov/go-openai` and the AGENTS.md httpHeader workaround).
-      Phase 2. 2h — `~/projects/Standup-Killer`
-- [ ] **T8** Migrate github-local-sync onto the kit, keeping its
-      `provider.Provider` shape and mapping its sentinels. Phase 3. 3h —
-      `~/projects/github-local-sync`
-
-## Medium
-
-- [ ] **T9** Migrate standard-bug-tracking-schema plumbing onto the kit via
-      adapters around `StatusError` (keep sbts's BBolt ETag layer — recorded
-      recommendation). Phase 3. 3h — `~/projects/standard-bug-tracking-schema`
-- [ ] **T10** Build the go-localsync GitHub-events `provider.Provider` over
-      the kit. Phase 4. 4h — `~/projects/go-localsync`
 - [ ] **T11** Mine nightly fuzz artifacts for corpus seeds once runs exist.
       ongoing — `.github/workflows/fuzz.yml`
 
+## High
+
+- [ ] **T12** Teach `ClassifyError` to recognize go-github's dedicated
+      `*gh.RateLimitError` and `*gh.AbuseRateLimitError` types (map both to
+      `ErrRateLimited`). Discovered during the consumer migrations: the
+      kernel's gate only rejects budgets it already knows are empty, so the
+      first teaching 403 with `X-RateLimit-Remaining: 0` surfaces as a raw
+      SDK type — Standup-Killer and the go-localsync GitHub provider both
+      carry identical local workarounds today. Ship with tests + a tag; the
+      consumers can then drop their shims. 1h — `errors.go`
+
 ## Parked (plan-level, tracked in the ecosystem plan — not this repo)
 
-- Decide the go-localsync provider module layout (in-repo vs. optional
-  module) before Phase 4 starts.
+- Follow-ups for the extracted `go-localsync/provider/github` module live in
+  that repo's TODO_LIST (core release, parent pin bump, module tag, CI
+  wiring, github-local-sync migration onto the shared provider).

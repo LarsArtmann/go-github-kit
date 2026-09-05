@@ -14,10 +14,12 @@ renumbered, and deleting an item retires its ID for good.
       and watch the first CI run go green on all three matrix legs. 15m
 - [ ] **T2** Install/enable the Renovate app (config validates; inert until
       the GitHub App is installed). 5m — `renovate.json`
-- [ ] **T4** Observe a flake-lock PR open end-to-end (workflow now has the
-      write permissions the bot was denied; the vendorHash guard is proven
-      to fire on real drift — trigger `workflow_dispatch` or wait for the
-      monthly cron). 5m — `.github/workflows/flake-update.yml`
+- [ ] **T4** Observe a flake-lock PR open end-to-end. The bot can now push
+      the branch (proven: `deps/flake-lock-update` exists on origin); PR
+      creation is blocked by the repo setting "Allow GitHub Actions to
+      create and approve pull requests" (UI-only — Settings → Actions →
+      General → Workflow permissions), then re-run the workflow or open
+      the PR from the pushed branch. 5m — `.github/workflows/flake-update.yml`
 - [ ] **T11** Mine nightly fuzz artifacts for corpus seeds once runs exist.
       ongoing — `.github/workflows/fuzz.yml`
 

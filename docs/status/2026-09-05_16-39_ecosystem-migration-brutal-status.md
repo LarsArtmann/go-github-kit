@@ -189,6 +189,7 @@ explicitly marked otherwise. Origin states are snapshot-truthful: several repos 
 ## f) Next up to 50 (brainstorm-grade, impact-sorted; ≠ commitments)
 
 **Kit (go-github-kit)**
+
 1. Implement T12: ClassifyError recognizes `*gh.RateLimitError`/`*gh.AbuseRateLimitError` → ErrRateLimited; tests; tag v0.3.0 (go-release skill).
 2. Push the 5 verified commits (or get daemon to) and watch the 3-leg CI go green on origin.
 3. T4: trigger `workflow_dispatch` on flake-update; observe the PR open end-to-end.
@@ -266,5 +267,5 @@ explicitly marked otherwise. Origin states are snapshot-truthful: several repos 
 
 ---
 
-*Point-in-time snapshot; written to be ANNOTATEd, not rewritten. The daemon will
-commit this file; I did not commit manually (no explicit instruction).*
+_Point-in-time snapshot; written to be ANNOTATEd, not rewritten. The daemon will
+commit this file; I did not commit manually (no explicit instruction)._

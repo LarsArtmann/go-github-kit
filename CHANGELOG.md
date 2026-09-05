@@ -11,9 +11,18 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
 
 ## [Unreleased]
 
-### Changed
+### Fixed
 
-- Nothing yet.
+- The monthly flake-lock workflow can actually open its PR now: the job ran
+  with `contents: read` only, so `github-actions[bot]` was denied pushing the
+  branch (403). It now holds `contents: write` + `pull-requests: write`, and
+  the build check no longer blocks PR creation — CI's `nix flake check` on the
+  PR is the authoritative stale-vendorHash guard, as the PR body documents.
+- `scripts/check-vendor-hash.sh` no longer false-positives on `go`/
+  `toolchain`-directive-only go.mod bumps (compiler pins cannot rehash the
+  vendor derivation); a real dependency-set change still trips it. Also
+  clears the `nolintlint` finding that failed the 3-leg matrix on lint
+  config refresh.
 
 ## [0.2.0] - 2026-08-16
 

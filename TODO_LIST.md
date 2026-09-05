@@ -14,13 +14,10 @@ renumbered, and deleting an item retires its ID for good.
       and watch the first CI run go green on all three matrix legs. 15m
 - [ ] **T2** Install/enable the Renovate app (config validates; inert until
       the GitHub App is installed). 5m — `renovate.json`
-- [ ] **T3** Observe the first nightly fuzz run (03:17 UTC); on green, flip
-      the FEATURES row to FULLY_FUNCTIONAL. 5m — `.github/workflows/fuzz.yml`
-- [ ] **T4** Observe the first monthly flake-lock PR; check the vendorHash
-      guard fires correctly on a stale hash. 5m —
-      `.github/workflows/flake-update.yml`
-- [ ] **T5** After tagging v0.1.0, verify pkg.go.dev renders the module and
-      smoke-test `go get` from a fresh temp module. 10m — `RELEASING.md`
+- [ ] **T4** Observe a flake-lock PR open end-to-end (workflow now has the
+      write permissions the bot was denied; the vendorHash guard is proven
+      to fire on real drift — trigger `workflow_dispatch` or wait for the
+      monthly cron). 5m — `.github/workflows/flake-update.yml`
 
 ## High
 
@@ -49,5 +46,3 @@ renumbered, and deleting an item retires its ID for good.
 
 - Decide the go-localsync provider module layout (in-repo vs. optional
   module) before Phase 4 starts.
-- Whether to tag v0.1.0 if GitHub Actions billing stays broken (seen on
-  project-discovery-sdk); decision belongs to the extraction plan owner.

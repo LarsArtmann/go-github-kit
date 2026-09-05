@@ -33,20 +33,34 @@ if ! git rev-parse --verify --quiet "$base_rev" >/dev/null; then
 	exit 2
 fi
 
-go_files_changed=0
-if ! git diff --quiet "$base_rev" -- go.mod go.sum; then
-	go_files_changed=1
+# The `go`/`toolchain` directives of go.mod are deliberately excluded: they
+# pin the compiler, not the module set, so a toolchain bump alone cannot
+# rehash the vendor derivation (a `nix build` on such a bump stays green and
+# the sha256 legitimately stays the same).
+dependency_snapshot() {
+	git show "$1:go.mod" 2>/dev/null | grep -vE '^(go|toolchain)[[:space:]]' || true
+	git show "$1:go.sum" 2>/dev/null || true
+}
+
+current_dependency_snapshot() {
+	grep -vE '^(go|toolchain)[[:space:]]' go.mod || true
+	cat go.sum 2>/dev/null || true
+}
+
+go_deps_changed=0
+if [[ "$(dependency_snapshot "$base_rev")" != "$(current_dependency_snapshot)" ]]; then
+	go_deps_changed=1
 fi
 
 base_vendor_hash=$(git show "$base_rev:flake.nix" 2>/dev/null | grep -o 'vendorHash = "[^"]*"' || true)
 head_vendor_hash=$(grep -o 'vendorHash = "[^"]*"' flake.nix || true)
 
-if [[ $go_files_changed -eq 1 && "$base_vendor_hash" == "$head_vendor_hash" ]]; then
+if [[ $go_deps_changed -eq 1 && "$base_vendor_hash" == "$head_vendor_hash" ]]; then
 	cat >&2 <<EOF
 check-vendor-hash: DRIFT DETECTED
 
-go.mod/go.sum changed since $base_rev but the vendorHash in flake.nix
-did not ($head_vendor_hash).
+go.mod/go.sum dependency set changed since $base_rev but the vendorHash in
+flake.nix did not ($head_vendor_hash).
 
 Fix:
   nix build .#default       # fails with the correct hash in the error
@@ -56,7 +70,7 @@ EOF
 	exit 1
 fi
 
-if [[ $go_files_changed -eq 0 && "$base_vendor_hash" != "$head_vendor_hash" ]]; then
+if [[ $go_deps_changed -eq 0 && "$base_vendor_hash" != "$head_vendor_hash" ]]; then
 	echo "check-vendor-hash: note — vendorHash changed without go.mod/go.sum changes"
 	echo "  (expected after a nixpkgs/flake.lock bump rehashes the vendor derivation)"
 fi

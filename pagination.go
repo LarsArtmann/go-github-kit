@@ -55,7 +55,7 @@ var ErrInvalidPagination = errors.New("githubkit: PaginationOptions.MaxPages mus
 //
 // The per-page rate gate applies automatically when fetch goes through a
 // Kernel, since each page is an ordinary request through the kernel stack.
-func FetchPages[T any]( //nolint:cyclop,funlen // concurrency state machine: defaults, early stop, bounded dispatch
+func FetchPages[T any]( //nolint:cyclop // concurrency state machine: defaults, early stop, bounded dispatch
 	ctx context.Context,
 	opts PaginationOptions,
 	fetch func(ctx context.Context, page int) ([]T, error),

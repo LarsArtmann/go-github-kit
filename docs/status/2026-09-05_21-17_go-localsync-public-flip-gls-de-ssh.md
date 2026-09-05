@@ -8,17 +8,17 @@
 
 ## Verification Evidence (what "public" actually means now)
 
-| Check | Result |
-| --- | --- |
-| `gh api repos/LarsArtmann/go-localsync` | `private=false, visibility=public` |
-| Standup-Killer / standard-bug-tracking-schema | still `private=true` |
-| `proxy.golang.org/.../go-localsync/@v/list` | `v0.5.0` |
-| `proxy.golang.org/.../go-localsync/provider/github/@v/list` | `v0.1.0` |
-| Clean-cache `go list -m` with `GOPROXY=https://proxy.golang.org GONOPROXY=none GOSUMDB=sum.golang.org` | **both resolve — PROXY-PROOF-OK** (no VCS fallback, sumdb attests) |
-| Proxy `.info` Origin hashes vs local tags | exact match: `v0.5.0` → `d603e1203f67…`, `provider/github/v0.1.0` → `13321fcdf46…` |
-| pkg.go.dev | both pages render (`@v0.5.0` Latest, full tree; `provider/github@v0.1.0` Latest, Imports: 14, **Imported by: 0**) |
-| pkg.go.dev license | **"License: UNKNOWN"** on both modules — provider/github docs are **hidden** ("Documentation not displayed due to license restrictions") |
-| All LarsArtmann deps public? | YES — go-cqrs-lite, cqrs-htmx, go-branded-id, go-error-family, httputil, go-nix-helpers all `private=false` (checked via gh api) |
+| Check                                                                                                  | Result                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `gh api repos/LarsArtmann/go-localsync`                                                                | `private=false, visibility=public`                                                                                                       |
+| Standup-Killer / standard-bug-tracking-schema                                                          | still `private=true`                                                                                                                     |
+| `proxy.golang.org/.../go-localsync/@v/list`                                                            | `v0.5.0`                                                                                                                                 |
+| `proxy.golang.org/.../go-localsync/provider/github/@v/list`                                            | `v0.1.0`                                                                                                                                 |
+| Clean-cache `go list -m` with `GOPROXY=https://proxy.golang.org GONOPROXY=none GOSUMDB=sum.golang.org` | **both resolve — PROXY-PROOF-OK** (no VCS fallback, sumdb attests)                                                                       |
+| Proxy `.info` Origin hashes vs local tags                                                              | exact match: `v0.5.0` → `d603e1203f67…`, `provider/github/v0.1.0` → `13321fcdf46…`                                                       |
+| pkg.go.dev                                                                                             | both pages render (`@v0.5.0` Latest, full tree; `provider/github@v0.1.0` Latest, Imports: 14, **Imported by: 0**)                        |
+| pkg.go.dev license                                                                                     | **"License: UNKNOWN"** on both modules — provider/github docs are **hidden** ("Documentation not displayed due to license restrictions") |
+| All LarsArtmann deps public?                                                                           | YES — go-cqrs-lite, cqrs-htmx, go-branded-id, go-error-family, httputil, go-nix-helpers all `private=false` (checked via gh api)         |
 
 pkg.go.dev indexing did not happen by itself: the `/fetch/` GET endpoints 404; the fetch form is a **POST** (done via a throwaway Go program, since curl is banned) → HTTP 408 = fetch queued → pages appeared minutes later.
 
@@ -45,10 +45,10 @@ While verifying, go-localsync showed **4 fresh daemon commits** (post-`4721378`)
 
 ## b) PARTIALLY DONE
 
-1. **go-localsync CI public debut** — CI now *runs* (public repos skip the billing gate; first-ever real runs happened today) but the latest master run is **red**: `go vet` exit 1, tests exit 2, and `govulncheck` fails with `could not import encoding/json/v2 (invalid package name: "")` inside go-cqrs-lite `id/v4`/`event/v4` sources. Diagnosis (read-only): the jsonv2 experiment is not reaching the vet/govulncheck steps after the other actor's CI cleanup; none of this pipeline was ever executed pre-flip because billing blocked private-repo runs. **Not fixed** — that workspace is actively owned by someone else.
+1. **go-localsync CI public debut** — CI now _runs_ (public repos skip the billing gate; first-ever real runs happened today) but the latest master run is **red**: `go vet` exit 1, tests exit 2, and `govulncheck` fails with `could not import encoding/json/v2 (invalid package name: "")` inside go-cqrs-lite `id/v4`/`event/v4` sources. Diagnosis (read-only): the jsonv2 experiment is not reaching the vet/govulncheck steps after the other actor's CI cleanup; none of this pipeline was ever executed pre-flip because billing blocked private-repo runs. **Not fixed** — that workspace is actively owned by someone else.
 2. **provider/github public documentation** — module is indexed, but its docs page is suppressed pending a detectable LICENSE. Owner call, not made.
 3. **Ecosystem "all public" documentation state** — 8 repos verified public this session, but the 19:30 completion status doc still (correctly, point-in-time) says go-localsync is private; it needs an ANNOTATE pass, not a rewrite.
-4. **GLS-CQRS-V5 deprecation debt** — reduced from 12 to 8 suppression sites, but the 4 removed went stale because the *graph* changed, not because the migrations (ADR-0123/0114, go-sse) landed.
+4. **GLS-CQRS-V5 deprecation debt** — reduced from 12 to 8 suppression sites, but the 4 removed went stale because the _graph_ changed, not because the migrations (ADR-0123/0114, go-sse) landed.
 5. **gls first real Actions run of the new secret-free pipeline** — impossible until billing is fixed (repo still private); everything is staged and locally proven.
 6. **pkg.go.dev "Imported by: 0"** for provider/github — will stay 0 until gls tags a release and pkg.go.dev re-scans.
 
@@ -77,7 +77,7 @@ Nothing was destroyed or broken by this session. The honest hall of shame:
 ## e) WHAT WE SHOULD IMPROVE
 
 1. **Never mask gate exit codes** — `set -o pipefail` or plain exit-code capture when long-running checks are summarized; today's `CHECK-OK` bug is the proof.
-2. **Detect concurrent agents *before* planning repo edits**, not during verification — one `git status` + `git log origin/master..HEAD` glance saved go-localsync from a two-writer disaster; make it a mandatory first step per repo.
+2. **Detect concurrent agents _before_ planning repo edits**, not during verification — one `git status` + `git log origin/master..HEAD` glance saved go-localsync from a two-writer disaster; make it a mandatory first step per repo.
 3. **Verify inherited doc claims before building on them** — localsync's already-updated AGENTS.md claimed pkg.go.dev indexing before it was true; the inherited kit context claimed "six truly-private deps" when the real number had dropped to zero. Both were caught, but only by luck of thoroughness.
 4. **Treat suppression directives as expiring debt** — 4 of 12 nolints rotted the moment the dependency graph changed. Root-cause fixes over suppressions; suppressions need a "re-validate on dependency bump" habit (the lint gate caught it — good — but only because nolintlint is strict).
 5. **Visibility flips need a stored runbook**: proxy proof → pkg.go.dev fetch → first CI run → docs sweep → consumer de-SSH. Today's sequence was improvised; it worked, so write it down (candidate: extend the `nix-private-go-repos` skill with the de-privatization inverse).
@@ -85,9 +85,10 @@ Nothing was destroyed or broken by this session. The honest hall of shame:
 
 ## f) Up to 50 things we should get done next
 
-*Brainstorm ranked by impact/effort — most are ROADMAP fuel, not commitments (docs-health HARVEST would route them).*
+_Brainstorm ranked by impact/effort — most are ROADMAP fuel, not commitments (docs-health HARVEST would route them)._
 
 **Owner-gated (blocking chains):**
+
 1. Fix GitHub Actions billing/spending limit → unblocks SK + sbts CI chains (user).
 2. Decide SK/sbts visibility — going public would eliminate the billing dependency entirely (user).
 3. Flip "Allow GitHub Actions to create and approve pull requests" → dispatch `flake-update.yml` → close kit T4 (user).
@@ -159,4 +160,4 @@ Nothing was destroyed or broken by this session. The honest hall of shame:
 
 ---
 
-*Point-in-time snapshot — all claims above were verified by commands run in this session (gh api, proxy .info/list, go list with isolated GOMODCACHE, nix build/flake check, gh run logs). Docs-health ANNOTATE should supersede, never rewrite, this file.*
+_Point-in-time snapshot — all claims above were verified by commands run in this session (gh api, proxy .info/list, go list with isolated GOMODCACHE, nix build/flake check, gh run logs). Docs-health ANNOTATE should supersede, never rewrite, this file._

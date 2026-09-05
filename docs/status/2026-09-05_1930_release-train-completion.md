@@ -6,11 +6,11 @@ explicit.
 
 ## Release train (the 1% + 4%)
 
-| Artifact | Version | State | Verification |
-|---|---|---|---|
-| go-github-kit | **v0.3.0** | Tagged, pushed, GitHub Release (Latest), CI green on tagged-HEAD parent commit | `go get @v0.3.0` from clean GOMODCACHE via proxy.golang.org |
-| go-localsync | **v0.5.0** | Tagged, pushed, GitHub Release | `go get @v0.5.0` — resolves via **VCS credentials, not the proxy** (repo is private; proxy `.info` 404s) |
-| go-localsync/provider/github | **v0.1.0** | Tagged, pushed, GitHub Release, standalone `GOWORK=off` build+race tests green | Same VCS-not-proxy caveat as parent |
+| Artifact                     | Version    | State                                                                          | Verification                                                                                             |
+| ---------------------------- | ---------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| go-github-kit                | **v0.3.0** | Tagged, pushed, GitHub Release (Latest), CI green on tagged-HEAD parent commit | `go get @v0.3.0` from clean GOMODCACHE via proxy.golang.org                                              |
+| go-localsync                 | **v0.5.0** | Tagged, pushed, GitHub Release                                                 | `go get @v0.5.0` — resolves via **VCS credentials, not the proxy** (repo is private; proxy `.info` 404s) |
+| go-localsync/provider/github | **v0.1.0** | Tagged, pushed, GitHub Release, standalone `GOWORK=off` build+race tests green | Same VCS-not-proxy caveat as parent                                                                      |
 
 **Correction of an earlier claim:** the prior session's "all LarsArtmann Go
 modules are now PUBLIC" does not hold — `go-localsync` is **private**. Proxy
@@ -99,11 +99,11 @@ a non-decision in kit ROADMAP).
 
 ## Final gate state (all verified this session)
 
-| Repo | build | test | vet | lint | nix build | flake check |
-|---|---|---|---|---|---|---|
-| go-github-kit (master) | ✅ | ✅ -race | ✅ | ✅ 0 | ✅ | ✅ all checks |
-| go-localsync (master) | ✅ | ✅ | ✅ | ✅ 0 | ✅ | ✅ all checks |
-| go-localsync/provider/github | ✅ GOWORK=off | ✅ -race | ✅ | — | n/a | n/a |
-| github-local-sync (master) | ✅ both modes | ✅ both modes | ✅ | (via flake check) | ✅ | ✅ all checks |
-| standard-bug-tracking-schema (main) | ✅ | ✅ | ✅ | (not in gate) | ✅ | ✅ all checks |
-| Standup-Killer (main) | ✅ | ✅ | ✅ | ⚠️ 150 pre-existing, tracked | (not in gate) | (not in gate) |
+| Repo                                | build         | test          | vet | lint                        | nix build     | flake check   |
+| ----------------------------------- | ------------- | ------------- | --- | --------------------------- | ------------- | ------------- |
+| go-github-kit (master)              | ✅            | ✅ -race      | ✅  | ✅ 0                        | ✅            | ✅ all checks |
+| go-localsync (master)               | ✅            | ✅            | ✅  | ✅ 0                        | ✅            | ✅ all checks |
+| go-localsync/provider/github        | ✅ GOWORK=off | ✅ -race      | ✅  | —                           | n/a           | n/a           |
+| github-local-sync (master)          | ✅ both modes | ✅ both modes | ✅  | (via flake check)           | ✅            | ✅ all checks |
+| standard-bug-tracking-schema (main) | ✅            | ✅            | ✅  | (not in gate)               | ✅            | ✅ all checks |
+| Standup-Killer (main)               | ✅            | ✅            | ✅  | ⚠️ 150 pre-existing, tracked | (not in gate) | (not in gate) |

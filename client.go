@@ -96,6 +96,10 @@ func New(opts ...Option) (*Kernel, error) {
 		ghClient.BaseURL = baseURL
 	}
 
+	if options.UserAgent != "" {
+		ghClient.UserAgent = options.UserAgent
+	}
+
 	return &Kernel{
 		Client:    ghClient,
 		rateCache: cache,

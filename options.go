@@ -70,6 +70,10 @@ type Options struct {
 	// rather than replaces it.
 	HTTPClient *http.Client
 
+	// UserAgent overrides the client identity sent with every request.
+	// Empty means the go-github default.
+	UserAgent string
+
 	// RequestTimeout bounds one round trip. Zero means [DefaultRequestTimeout].
 	RequestTimeout time.Duration
 

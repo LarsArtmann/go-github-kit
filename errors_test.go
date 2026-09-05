@@ -178,7 +178,7 @@ func TestClassifyErrorNativeRateLimitTypes(t *testing.T) {
 			}
 
 			// The dedicated SDK type must survive classification.
-			if !errors.Is(classified, tt.err) { //nolint:errorlint // identity of the original is the assertion
+			if !errors.Is(classified, tt.err) {
 				t.Errorf("classified error lost the original %T: %v", tt.err, classified)
 			}
 		})
@@ -216,6 +216,7 @@ func TestStatusErrorMessage(t *testing.T) {
 
 func newGhErrorResponse(status int, rateHeaders map[string]string) *gh.ErrorResponse {
 	return &gh.ErrorResponse{
+		//nolint:bodyclose // fixture response, never handed to an http.Client
 		Response: newGhTestResponse(status, rateHeaders),
 		Message:  http.StatusText(status),
 	}
@@ -223,7 +224,8 @@ func newGhErrorResponse(status int, rateHeaders map[string]string) *gh.ErrorResp
 
 func newGhRateLimitError(status int) *gh.RateLimitError {
 	return &gh.RateLimitError{
-		Rate:     gh.Rate{Reset: gh.Timestamp{Time: time.Now().Add(time.Hour).UTC()}},
+		Rate: gh.Rate{Reset: gh.Timestamp{Time: time.Now().Add(time.Hour).UTC()}},
+		//nolint:bodyclose // fixture response, never handed to an http.Client
 		Response: newGhTestResponse(status, nil),
 		Message:  "API rate limit exceeded",
 	}
@@ -233,6 +235,7 @@ func newGhAbuseRateLimitError(status int) *gh.AbuseRateLimitError {
 	retryAfter := time.Minute
 
 	return &gh.AbuseRateLimitError{
+		//nolint:bodyclose // fixture response, never handed to an http.Client
 		Response:   newGhTestResponse(status, nil),
 		Message:    "You have triggered an abuse detection mechanism",
 		RetryAfter: &retryAfter,
@@ -256,6 +259,7 @@ func newGhTestResponse(status int, rateHeaders map[string]string) *http.Response
 		StatusCode: status,
 		Status:     fmt.Sprintf("%d %s", status, http.StatusText(status)),
 		Header:     header,
+		Body:       http.NoBody,
 		Request:    req,
 	}
 }

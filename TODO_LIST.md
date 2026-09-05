@@ -23,17 +23,6 @@ renumbered, and deleting an item retires its ID for good.
 - [ ] **T11** Mine nightly fuzz artifacts for corpus seeds once runs exist.
       ongoing — `.github/workflows/fuzz.yml`
 
-## High
-
-- [ ] **T12** Teach `ClassifyError` to recognize go-github's dedicated
-      `*gh.RateLimitError` and `*gh.AbuseRateLimitError` types (map both to
-      `ErrRateLimited`). Discovered during the consumer migrations: the
-      kernel's gate only rejects budgets it already knows are empty, so the
-      first teaching 403 with `X-RateLimit-Remaining: 0` surfaces as a raw
-      SDK type — Standup-Killer and the go-localsync GitHub provider both
-      carry identical local workarounds today. Ship with tests + a tag; the
-      consumers can then drop their shims. 1h — `errors.go`
-
 ## Parked (plan-level, tracked in the ecosystem plan — not this repo)
 
 - Follow-ups for the extracted `go-localsync/provider/github` module live in

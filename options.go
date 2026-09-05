@@ -133,6 +133,13 @@ func WithHTTPClient(client *http.Client) Option {
 	return func(o *Options) { o.HTTPClient = client }
 }
 
+// WithUserAgent sets the client identity sent with every request, so
+// consumers identify themselves to GitHub (and their traffic is visible
+// in support cases) without mutating the kernel after construction.
+func WithUserAgent(userAgent string) Option {
+	return func(o *Options) { o.UserAgent = userAgent }
+}
+
 // WithTimeout bounds a single HTTP round trip. Zero-value options use
 // [DefaultRequestTimeout]. Waits inside the kernel (rate-limit reset,
 // backoff sleeps) are not bounded by this; they follow the call's context.

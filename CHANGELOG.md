@@ -11,6 +11,26 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
 
 ## [Unreleased]
 
+### Added
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.3.0] - 2026-09-05
+
+### Added
+
+- `ClassifyError` now recognizes go-github's dedicated rate-limit error
+  types, `*gh.RateLimitError` and `*gh.AbuseRateLimitError`, and maps both
+  to `ErrRateLimited` (wrapping them in a `*StatusError` that preserves the
+  original SDK error for `errors.AsType`). Consumers no longer need local
+  shims to classify teaching-403 and secondary-limit responses.
+- `WithUserAgent` option sets the client identity sent with every request
+  at construction time, instead of mutating `Kernel.UserAgent` afterwards.
+
 ### Fixed
 
 - The monthly flake-lock workflow can actually open its PR now: the job ran

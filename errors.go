@@ -26,8 +26,9 @@ var (
 	ErrForbidden = errors.New("github: forbidden")
 
 	// ErrRateLimited marks an exhausted request budget: HTTP 429, a 403
-	// with zero remaining requests, or a reset time too far in the future
-	// to wait for (see RateLimitOptions.MaxWait).
+	// with zero remaining requests, go-github's dedicated
+	// *RateLimitError/*AbuseRateLimitError types, or a reset time too far
+	// in the future to wait for (see RateLimitOptions.MaxWait).
 	ErrRateLimited = errors.New("github: rate limit exceeded")
 
 	// ErrNotFound marks a missing resource (HTTP 404).
@@ -79,7 +80,8 @@ func (e *StatusError) Unwrap() []error {
 
 // ClassifyError maps an error returned by a go-github call to a
 // [*StatusError] matching a kit sentinel. The original error is preserved:
-// errors.AsType[*github.ErrorResponse] and errors.Is against go-github's
+// errors.AsType[*github.ErrorResponse], [*github.RateLimitError], and
+// [*github.AbuseRateLimitError] as well as errors.Is against go-github's
 // own sentinels still succeed on the result. nil classifies to nil.
 //
 // Errors that match no category (e.g. HTTP 400) are returned unchanged —
@@ -91,6 +93,18 @@ func ClassifyError(err error) error {
 
 	if _, ok := errors.AsType[*StatusError](err); ok {
 		return err
+	}
+
+	// go-github reports exhausted budgets through dedicated types, both
+	// from its pre-flight check and from CheckResponse. They are not
+	// *ErrorResponse values, so they need their own branch — without it a
+	// teaching 403 (remaining 0) or a secondary limit surfaces unclassified.
+	if rlErr, ok := errors.AsType[*gh.RateLimitError](err); ok {
+		return classifyRateLimit(rlErr.Response, rlErr)
+	}
+
+	if abuseErr, ok := errors.AsType[*gh.AbuseRateLimitError](err); ok {
+		return classifyRateLimit(abuseErr.Response, abuseErr)
 	}
 
 	if ghErr, ok := errors.AsType[*gh.ErrorResponse](err); ok && ghErr.Response != nil {
@@ -111,6 +125,27 @@ func ClassifyError(err error) error {
 	}
 
 	return err
+}
+
+// classifyRateLimit wraps one of go-github's dedicated rate-limit error
+// types (cause) as a StatusError with ErrRateLimited. resp carries the
+// request context; both fields may be nil in adversarial cases, which
+// yields a StatusError without HTTP detail rather than a panic.
+func classifyRateLimit(resp *http.Response, cause error) *StatusError {
+	statusErr := &StatusError{Sentinel: ErrRateLimited, err: cause}
+
+	if resp == nil {
+		return statusErr
+	}
+
+	statusErr.Status = resp.StatusCode
+
+	if resp.Request != nil {
+		statusErr.Method = resp.Request.Method
+		statusErr.URL = resp.Request.URL.String()
+	}
+
+	return statusErr
 }
 
 func classifyResponseError(ghErr *gh.ErrorResponse) error {

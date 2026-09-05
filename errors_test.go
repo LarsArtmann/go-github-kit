@@ -129,6 +129,78 @@ func TestClassifyErrorGateRejection(t *testing.T) {
 	}
 }
 
+func TestClassifyErrorNativeRateLimitTypes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		err    error
+		status int
+	}{
+		{
+			name:   "RateLimitError 403 exhausted",
+			status: http.StatusForbidden,
+			err:    newGhRateLimitError(http.StatusForbidden),
+		},
+		{
+			name:   "AbuseRateLimitError 403 secondary limit",
+			status: http.StatusForbidden,
+			err:    newGhAbuseRateLimitError(http.StatusForbidden),
+		},
+		{
+			name:   "AbuseRateLimitError 429 with Retry-After",
+			status: http.StatusTooManyRequests,
+			err:    newGhAbuseRateLimitError(http.StatusTooManyRequests),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			classified := ClassifyError(tt.err)
+
+			if !errors.Is(classified, ErrRateLimited) {
+				t.Fatalf("errors.Is(%v, ErrRateLimited) = false", classified)
+			}
+
+			statusErr, ok := errors.AsType[*StatusError](classified)
+			if !ok {
+				t.Fatalf("expected *StatusError, got %T", classified)
+			}
+
+			if statusErr.Status != tt.status {
+				t.Errorf("Status = %d, want %d", statusErr.Status, tt.status)
+			}
+
+			if statusErr.Method != http.MethodGet || statusErr.URL == "" {
+				t.Errorf("request context lost: method=%q url=%q", statusErr.Method, statusErr.URL)
+			}
+
+			// The dedicated SDK type must survive classification.
+			if !errors.Is(classified, tt.err) { //nolint:errorlint // identity of the original is the assertion
+				t.Errorf("classified error lost the original %T: %v", tt.err, classified)
+			}
+		})
+	}
+}
+
+func TestClassifyErrorWrappedNativeRateLimit(t *testing.T) {
+	t.Parallel()
+
+	wrapped := fmt.Errorf("listing events: %w", newGhAbuseRateLimitError(http.StatusForbidden))
+
+	classified := ClassifyError(wrapped)
+
+	if !errors.Is(classified, ErrRateLimited) {
+		t.Fatalf("errors.Is(%v, ErrRateLimited) = false through fmt.Errorf", classified)
+	}
+
+	if _, ok := errors.AsType[*gh.AbuseRateLimitError](classified); !ok {
+		t.Errorf("classified error lost *gh.AbuseRateLimitError: %v", classified)
+	}
+}
+
 func TestStatusErrorMessage(t *testing.T) {
 	t.Parallel()
 
@@ -143,6 +215,31 @@ func TestStatusErrorMessage(t *testing.T) {
 }
 
 func newGhErrorResponse(status int, rateHeaders map[string]string) *gh.ErrorResponse {
+	return &gh.ErrorResponse{
+		Response: newGhTestResponse(status, rateHeaders),
+		Message:  http.StatusText(status),
+	}
+}
+
+func newGhRateLimitError(status int) *gh.RateLimitError {
+	return &gh.RateLimitError{
+		Rate:     gh.Rate{Reset: gh.Timestamp{Time: time.Now().Add(time.Hour).UTC()}},
+		Response: newGhTestResponse(status, nil),
+		Message:  "API rate limit exceeded",
+	}
+}
+
+func newGhAbuseRateLimitError(status int) *gh.AbuseRateLimitError {
+	retryAfter := time.Minute
+
+	return &gh.AbuseRateLimitError{
+		Response:   newGhTestResponse(status, nil),
+		Message:    "You have triggered an abuse detection mechanism",
+		RetryAfter: &retryAfter,
+	}
+}
+
+func newGhTestResponse(status int, rateHeaders map[string]string) *http.Response {
 	req, _ := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
@@ -155,12 +252,10 @@ func newGhErrorResponse(status int, rateHeaders map[string]string) *gh.ErrorResp
 		header.Set(key, value)
 	}
 
-	resp := &http.Response{
+	return &http.Response{
 		StatusCode: status,
 		Status:     fmt.Sprintf("%d %s", status, http.StatusText(status)),
 		Header:     header,
 		Request:    req,
 	}
-
-	return &gh.ErrorResponse{Response: resp, Message: http.StatusText(status)}
 }

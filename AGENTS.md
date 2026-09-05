@@ -14,12 +14,44 @@ caching, concurrent pagination. Consumers keep native SDK types.
   the AuthFactory seam, StatusError adapters, BBolt ETag kept), and the new
   `go-localsync/provider/github` optional nested module (unreleased; release
   follow-ups live in that repo's TODO_LIST).
-- Known kit gap (TODO_LIST T12): `ClassifyError` does not recognize
-  `*gh.RateLimitError`/`*gh.AbuseRateLimitError`; consumers carry local
-  workarounds in front of it.
+- T12 shipped in kit v0.3.0 (2026-09-05): `ClassifyError` recognizes
+  `*gh.RateLimitError`/`*gh.AbuseRateLimitError` → `ErrRateLimited`; the
+  consumers' local shims are deleted (SK, provider). v0.3.0 also added
+  `WithUserAgent`.
+- Release state 2026-09-05: kit v0.3.0, go-localsync v0.5.0, and
+  go-localsync/provider/github v0.1.0 (submodule tag: `provider/github/v0.1.0`)
+  are tagged and pushed. The sbts `m5-adapters` branch is landed on `main`.
+- **go-localsync is PRIVATE**: its tags never reach pkg.go.dev/proxy.
+  Local `go get` of its versions succeeds via git credentials (VCS), NOT via
+  proxy.golang.org — a 404 from the proxy .info endpoint is the tell. Nix
+  sandboxes without credentials cannot fetch it at all; consumers use the
+  mkPreparedSource deps-map pattern. Visibility flips are owner decisions
+  (see ROADMAP non-decisions).
+- **Private-repo GitHub Actions are billing-blocked** (SK CI run failed in
+  3s: "recent account payments have failed or your spending limit needs to
+  be increased"). Kit CI is unaffected (public repo). SK/localsync workflows
+  are enabled and correct; they will run once billing is fixed. sbts CI runs
+  only on `main`/`develop` — now exercised, since `m5-adapters` landed.
+- **The auto-git daemon races agents**: heuristic auto-commits can capture
+  HALF-EDITED states (a go.mod bump once landed without the matching code).
+  Before trusting any commit — local, daemon, or remote — verify the tree
+  actually builds: baseline gates are build+test+lint, not a clean `git status`.
+- **treefmt vs templ**: formatters must exclude `*_templ.go`; gofumpt
+  rewriting templ's generated output makes `templ generate -check`
+  permanently red (fixed in gls flake via `treefmt.settings.excludes`).
 - Convention template: `go-crush-data` (CI matrix, golangci config,
   RELEASING/SECURITY/CODEOWNERS, renovate, nightly fuzz, doc-link gate,
   TODO_LIST stable IDs, tag-after-final-commit).
+
+## Release gate checklist (per-repo, from the 2026-09-05 train)
+
+1. Baseline BEFORE editing: build + tests + lint + `nix build`/`flake check`.
+2. Verify under `set -o pipefail`; never trust a piped exit code.
+3. go.mod: no `replace`, no pseudo-versions in the tagged module.
+4. Commit release prep with a real message (daemon may sweep first — check
+   `git log` before assuming your commit is missing).
+5. Tag only after origin CI is green on the exact HEAD (`gh run list`).
+6. Annotated tag; push; proxy/VCS verify from a clean GOMODCACHE temp module.
 
 ## Technical facts (non-obvious, hard to rediscover)
 

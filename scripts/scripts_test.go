@@ -79,6 +79,23 @@ func scriptPath(t *testing.T) string {
 	return abs
 }
 
+// newBashCmd runs the guard script through bash: Windows cannot exec a .sh
+// directly, but bash (Git Bash) is on PATH everywhere CI runs.
+func newBashCmd(t *testing.T, dir string, args ...string) *exec.Cmd {
+	t.Helper()
+
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("bash not available: %v", err)
+	}
+
+	full := append([]string{scriptPath(t)}, args...)
+	cmd := exec.CommandContext(t.Context(), bash, full...)
+	cmd.Dir = dir
+
+	return cmd
+}
+
 func TestCheckVendorHash(t *testing.T) {
 	t.Parallel()
 
@@ -143,8 +160,7 @@ func TestCheckVendorHash(t *testing.T) {
 				fixtureFiles(t, dir, baseGoMod, baseGoSum, *tt.flake)
 			}
 
-			cmd := exec.CommandContext(t.Context(), scriptPath(t), "HEAD")
-			cmd.Dir = dir
+			cmd := newBashCmd(t, dir, "HEAD")
 			out, err := cmd.CombinedOutput()
 
 			code := 0
@@ -172,8 +188,7 @@ func TestCheckVendorHashBadBaseRev(t *testing.T) {
 
 	dir := setupRepo(t)
 
-	cmd := exec.CommandContext(t.Context(), scriptPath(t), "does-not-exist")
-	cmd.Dir = dir
+	cmd := newBashCmd(t, dir, "does-not-exist")
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("expected failure, got success\n%s", out)

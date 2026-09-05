@@ -8,9 +8,15 @@ caching, concurrent pagination. Consumers keep native SDK types.
 
 - Extracted from the 2026-08-15 stream plan (Stream G) in the projects
   workspace; the seed code was github-local-sync's internal/github package.
-- Consumer migration order (phases 2–4 of the plan): Standup-Killer →
-  github-local-sync → standard-bug-tracking-schema → a go-localsync
-  GitHub-events provider. Track via `TODO_LIST.md` T6–T10.
+- Consumer migrations (plan phases 2–4) are COMPLETE as of 2026-09-05:
+  Standup-Killer (kit v0.2.0 + FetchPages), github-local-sync (kept its
+  provider.Provider shape), standard-bug-tracking-schema (v66→v69 + kit at
+  the AuthFactory seam, StatusError adapters, BBolt ETag kept), and the new
+  `go-localsync/provider/github` optional nested module (unreleased; release
+  follow-ups live in that repo's TODO_LIST).
+- Known kit gap (TODO_LIST T12): `ClassifyError` does not recognize
+  `*gh.RateLimitError`/`*gh.AbuseRateLimitError`; consumers carry local
+  workarounds in front of it.
 - Convention template: `go-crush-data` (CI matrix, golangci config,
   RELEASING/SECURITY/CODEOWNERS, renovate, nightly fuzz, doc-link gate,
   TODO_LIST stable IDs, tag-after-final-commit).

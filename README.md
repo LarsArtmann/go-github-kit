@@ -18,7 +18,7 @@ non-idempotent POSTs, pagination loops that fetch serially, and error handling
 that string-matches status codes. One real production incident started exactly
 this way: a service authenticating with a bare PAT and no rate limiting at all.
 
-This kit centralizes that plumbing once, as an HTTP transport stack *under* the
+This kit centralizes that plumbing once, as an HTTP transport stack _under_ the
 native SDK. It is deliberately **not** a client wrapper: `Kernel` embeds
 `*github.Client`, so every native SDK method works directly, and code written
 against `*github.Client` compiles unchanged.
@@ -85,13 +85,13 @@ Every request flows through, outermost first:
 gate ──▶ feed ──▶ retry ──▶ etag ──▶ base
 ```
 
-| Layer | Behavior |
-|---|---|
-| **gate** | Pre-flight rate-limit check. Unknown budget → lazy `GET /rate_limit` probe (30s cooldown, probe failure never blocks). At or below `MinRemaining` (default 10) it sleeps until the reset; a reset further than `MaxWait` (default 15m) away fails fast with `ErrRateLimited`. |
-| **feed** | Parses `X-RateLimit-*` headers from **every** response, including failed retries, into a shared `RateLimitCache`. |
+| Layer     | Behavior                                                                                                                                                                                                                                                                                              |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **gate**  | Pre-flight rate-limit check. Unknown budget → lazy `GET /rate_limit` probe (30s cooldown, probe failure never blocks). At or below `MinRemaining` (default 10) it sleeps until the reset; a reset further than `MaxWait` (default 15m) away fails fast with `ErrRateLimited`.                         |
+| **feed**  | Parses `X-RateLimit-*` headers from **every** response, including failed retries, into a shared `RateLimitCache`.                                                                                                                                                                                     |
 | **retry** | `429` always retried (GitHub rejects before processing). `5xx` retried only for idempotent methods (GET/HEAD/OPTIONS/PUT/DELETE) — **POST is never auto-retried**. `Retry-After` honored, capped at `MaxBackoff`. Default: 3 retries, 1s→30s exponential backoff. Request bodies are replayed safely. |
-| **etag** | Opt-in (`WithETagCache`). GET-only. Sends `If-None-Match`; a `304` becomes a synthesized `200` with the cached body and fresh rate headers, marked `X-Github-Kit-From-Cache: 1`. Entries are keyed by a credential fingerprint, so two tokens never share cache entries. |
-| **base** | Tuned `http.Transport` (100 idle conns, 10 per host, 90s idle timeout). |
+| **etag**  | Opt-in (`WithETagCache`). GET-only. Sends `If-None-Match`; a `304` becomes a synthesized `200` with the cached body and fresh rate headers, marked `X-Github-Kit-From-Cache: 1`. Entries are keyed by a credential fingerprint, so two tokens never share cache entries.                              |
+| **base**  | Tuned `http.Transport` (100 idle conns, 10 per host, 90s idle timeout).                                                                                                                                                                                                                               |
 
 Each concern is individually disable-able: `WithoutRateLimit()`, `WithoutRetry()`.
 `WithRateLimitOptions`/`WithRetryOptions` override only the fields you set —

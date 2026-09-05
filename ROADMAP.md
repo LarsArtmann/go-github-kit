@@ -1,7 +1,7 @@
 # Roadmap
 
 Long-term direction and raw ideas. Items graduate to [TODO_LIST.md](TODO_LIST.md)
-when they become actionable and bounded. This file records *why*, not *when*.
+when they become actionable and bounded. This file records _why_, not _when_.
 
 ## Direction
 

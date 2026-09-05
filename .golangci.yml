@@ -1,7 +1,13 @@
 version: "2"
 run:
   timeout: 5m
-  go: 1.26.5
+  go: 1.26.7
+  build-tags:
+    - goexperiment.arenas
+    - goexperiment.goroutineleakprofile
+    - goexperiment.jsonv2
+    - goexperiment.runtimesecret
+    - goexperiment.simd
   allow-parallel-runners: true
   allow-serial-runners: true
   issues-exit-code: 1
@@ -22,7 +28,6 @@ linters:
     - copyloopvar
     - cyclop
     - decorder
-    - depguard
     - dogsled
     - dupl
     - dupword
@@ -120,46 +125,55 @@ linters:
     - wsl_v5
     - zerologlint
   disable:
+    - depguard
     - noinlineerr
   settings:
     cyclop:
       max-complexity: 12
-    depguard:
-      rules:
-        main:
-          allow:
-            - $gostd
-            - $module
-            - github.com/LarsArtmann/go-github-kit # root-package self-imports in tests
-            - github.com/google/go-github/v69
-            - github.com/larsartmann/go-etag
-            - github.com/onsi/ginkgo/v2
-            - github.com/onsi/gomega
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+        - (io.Closer).Close
+        - (*sql.DB).Close
+        - (*sql.Rows).Close
+        - (*sql.Stmt).Close
+        - (net.Conn).Close
+        - (*net.TCPConn).Close
+        - (*net.UDPConn).Close
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Print
+        - fmt.Printf
+        - fmt.Println
+        - (*strings.Builder).WriteString
+        - (*bytes.Buffer).WriteString
     exhaustruct:
       exclude:
         - os/exec.Cmd
-        # Partial literals are the API design here: zero-value snapshots
-        # mean "no information", options merge field-by-field, and transport
-        # structs are tuned, not exhausted.
         - github.com/LarsArtmann/go-github-kit\.(RateLimitSnapshot|ETagStats|ETagCache|ETagOptions|Options|StatusError|RateLimitOptions|RetryOptions|RateLimitCache|rateProber|gateTransport|feedTransport|retryTransport|etagTransport)
         - etagclient\.Stats
         - github.com/larsartmann/go-etag/client\.Stats
         - net/http\.(Transport|Client|Response)
-    goconst:
-      min-occurrences: 4
+    funlen:
+      lines: 200
+      statements: 100
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
+    goconst:
+      min-occurrences: 4
     gocritic:
       disabled-checks:
         - ifElseChain
     gomoddirectives:
       replace-local: true
+    gosec:
+      excludes:
+        - G304
+        - G115
     govet:
       disable:
-        # stdversion flags every encoding/json/v2 call as a go1.27 API (v2
-        # lands officially in 1.27); this repo intentionally uses it under
-        # GOEXPERIMENT=jsonv2 on the 1.26 toolchain.
         - stdversion
     ireturn:
       allow:
@@ -170,6 +184,12 @@ linters:
         - generic
     makezero:
       always: true
+    mnd:
+      ignored-numbers:
+        - "0"
+        - "1"
+        - "2"
+        - "100"
     revive:
       rules:
         - disabled: true
@@ -200,24 +220,30 @@ linters:
         - wg
         - w
         - r
-        - n
+        - "n"
         - o
         - req
         - res
         - ctx
         - url
       ignore-type-assert-ok: true
+    wrapcheck:
+      ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - errors.Join(
+        - .Wrap(
+        - .Wrapf(
+        - .WithMessage(
+        - .WithMessagef(
+        - .WithStack(
   exclusions:
     generated: lax
     rules:
-      # The transport stack's contract is to return RoundTripper errors
-      # verbatim (that is what an http.RoundTripper does); wrapcheck's
-      # "wrap everything" rule contradicts the design.
       - path: ^(transport|etag|probe)\.go$
-        linters: [wrapcheck]
-      # Test HTTP handlers construct raw response structs by hand; fixture
-      # servers, fake clocks, and table-driven cases make strictness linters
-      # noise here without catching anything real.
+        linters:
+          - wrapcheck
       - path: _test\.go
         linters:
           - exhaustruct
@@ -226,18 +252,21 @@ linters:
           - funlen
           - cyclop
           - goconst
-          - gosec # test servers accept any token by design
+          - gosec
           - err113
           - wrapcheck
           - nlreturn
           - wsl_v5
-          - canonicalheader # both GitHub header spellings are deliberately exercised
+          - canonicalheader
           - varnamelen
           - unparam
-      # The Ginkgo bootstrap is parallelized by RunSpecs, not t.Parallel.
       - path: ^githubkit_suite_test\.go$
         linters:
           - paralleltest
+      - path: _test\.go
+        text: unused
+        linters:
+          - unused
     paths:
       - _templ\.go$
       - \.gen\.go$

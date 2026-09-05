@@ -134,6 +134,33 @@ func TestNewWithHTTPClientAdoptsTransportAndTimeout(t *testing.T) {
 	}
 }
 
+func TestNewWithUserAgent(t *testing.T) {
+	t.Parallel()
+
+	var seenUserAgent string
+
+	server := newRecordingServer(func(w http.ResponseWriter, r *http.Request) {
+		seenUserAgent = r.Header.Get("User-Agent")
+		writeJSON(w, eventsPayload("event-1"))
+	})
+	defer server.Close()
+
+	const customUA = "standup-killer/1.0"
+
+	kernel := newKernel(t, server.URL, nil, WithUserAgent(customUA))
+	if _, _, err := kernel.Activity.ListEventsPerformedByUser(t.Context(), "octocat", false, nil); err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+
+	if kernel.UserAgent != customUA {
+		t.Errorf("kernel.UserAgent = %q, want %q", kernel.UserAgent, customUA)
+	}
+
+	if seenUserAgent != customUA {
+		t.Errorf("User-Agent header = %q, want %q", seenUserAgent, customUA)
+	}
+}
+
 func TestNewWithoutRateLimitKeepsSnapshotFeed(t *testing.T) {
 	t.Parallel()
 

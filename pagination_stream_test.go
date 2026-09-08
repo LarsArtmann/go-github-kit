@@ -70,6 +70,8 @@ func TestStreamPages_CallbackErrorAbortsWalk(t *testing.T) {
 
 	callbackErr := errors.New("downstream sink failed")
 
+	fetch := pages(4, 2)
+
 	var delivered []int
 
 	err := githubkit.StreamPages(t.Context(), githubkit.PaginationOptions{
@@ -110,6 +112,12 @@ func TestStreamPages_ShortPageEndsWalk(t *testing.T) {
 	err := githubkit.StreamPages(t.Context(), githubkit.PaginationOptions{
 		MaxPages: 10,
 		PerPage:  2,
+		// Sequential walk: page 3's dispatch decision happens before
+		// page 2's shortness is known, so a concurrent walk could
+		// legitimately dispatch (then skip at execution) page 3. With
+		// one page in flight the skip is deterministic, which is what
+		// this test pins.
+		Concurrency: 1,
 	}, fetch, func(_ context.Context, page int, items []int) error {
 		delivered = append(delivered, page)
 		assert.NotEmpty(t, items)

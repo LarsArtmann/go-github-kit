@@ -1,126 +1,100 @@
-package githubkit_test
+package githubkit
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
-	githubkit "github.com/LarsArtmann/go-github-kit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// startRecordingServer records when each request reaches the server.
-type startRecordingServer struct {
-	server *httptest.Server
-
-	mu     sync.Mutex
-	starts []time.Time
-}
-
-func newStartRecordingServer(t *testing.T) *startRecordingServer {
+// newPacingKernel builds a kernel against a fresh recording server with
+// the given pacing and the stub clock.
+func newPacingKernel(t *testing.T, clock *stubClock, pacing time.Duration) (*Kernel, *recordingServer) {
 	t.Helper()
 
-	rec := &startRecordingServer{}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		rec.mu.Lock()
-		rec.starts = append(rec.starts, time.Now())
-		rec.mu.Unlock()
+	server := newRecordingServer(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	rec.server = httptest.NewServer(mux)
-	t.Cleanup(rec.server.Close)
+	kernel := newKernel(t, server.URL, clock,
+		WithoutRateLimit(),
+		WithoutRetry(),
+		WithSecondaryPacing(pacing),
+	)
 
-	return rec
-}
-
-func (s *startRecordingServer) requestStarts() []time.Time {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return append([]time.Time(nil), s.starts...)
+	return kernel, server
 }
 
 func TestSecondaryPacing_SpacesConcurrentRequests(t *testing.T) {
 	t.Parallel()
 
-	rec := newStartRecordingServer(t)
-	kernel := newKernel(t, rec.server.URL, nil,
-		githubkit.WithoutRateLimit(),
-		githubkit.WithoutRetry(),
-		githubkit.WithSecondaryPacing(15*time.Millisecond),
-	)
+	clock := newStubClock(time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC))
+	kernel, server := newPacingKernel(t, clock, 15*time.Millisecond)
 
 	const requests = 5
 
 	var wg sync.WaitGroup
 	for range requests {
 		wg.Go(func() {
-			resp, err := kernel.Client.Users.Get(t.Context(), "")
+			_, _, err := kernel.Client.Users.Get(t.Context(), "")
 			require.NoError(t, err)
-			_ = resp.Body.Close()
 		})
 	}
 	wg.Wait()
 
-	starts := rec.requestStarts()
-	require.Len(t, starts, requests)
-
-	for i := 1; i < len(starts); i++ {
-		gap := starts[i].Sub(starts[i-1])
-		assert.GreaterOrEqual(t, gap, 13*time.Millisecond,
-			"request starts are spaced by at least the pacing interval")
+	// With the stub clock, waits are recorded rather than slept. The
+	// pacing budget shows up as waits summing to at least
+	// (requests-1) × interval: the first request goes immediately, every
+	// further request waits out its slot.
+	clock.mu.Lock()
+	var total time.Duration
+	for _, d := range clock.sleeps {
+		total += d
 	}
+	clock.mu.Unlock()
+
+	assert.GreaterOrEqual(t, total, 4*15*time.Millisecond,
+		"concurrent requests wait out their pacing slots")
+	assert.Equal(t, requests, server.totalCalls(), "every request reached the server")
 }
 
 func TestSecondaryPacing_DisabledByDefault(t *testing.T) {
 	t.Parallel()
 
-	rec := newStartRecordingServer(t)
-	kernel := newKernel(t, rec.server.URL, nil,
-		githubkit.WithoutRateLimit(),
-		githubkit.WithoutRetry(),
-	)
+	clock := newStubClock(time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC))
+	kernel, server := newPacingKernel(t, clock, 0)
 
 	var wg sync.WaitGroup
 	for range 5 {
 		wg.Go(func() {
-			resp, err := kernel.Client.Users.Get(t.Context(), "")
+			_, _, err := kernel.Client.Users.Get(t.Context(), "")
 			require.NoError(t, err)
-			_ = resp.Body.Close()
 		})
 	}
 	wg.Wait()
 
-	starts := rec.requestStarts()
-	require.Len(t, starts, 5)
+	clock.mu.Lock()
+	sleeps := len(clock.sleeps)
+	clock.mu.Unlock()
 
-	var maxGap time.Duration
-	for i := 1; i < len(starts); i++ {
-		if gap := starts[i].Sub(starts[i-1]); gap > maxGap {
-			maxGap = gap
-		}
-	}
-	assert.Less(t, maxGap, 15*time.Millisecond,
-		"without pacing, concurrent requests are not spaced")
+	assert.Zero(t, sleeps, "no pacing configured, so no waits")
+	assert.Equal(t, 5, server.totalCalls(), "requests reach the server unpaced")
 }
 
 func TestSecondaryPacing_NegativeIsDisabled(t *testing.T) {
 	t.Parallel()
 
-	rec := newStartRecordingServer(t)
-	kernel := newKernel(t, rec.server.URL, nil,
-		githubkit.WithoutRateLimit(),
-		githubkit.WithoutRetry(),
-		githubkit.WithSecondaryPacing(-time.Second),
-	)
+	clock := newStubClock(time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC))
+	kernel, _ := newPacingKernel(t, clock, -time.Second)
 
-	resp, err := kernel.Client.Users.Get(t.Context(), "")
+	_, _, err := kernel.Client.Users.Get(t.Context(), "")
 	require.NoError(t, err)
-	_ = resp.Body.Close()
 
-	assert.Len(t, rec.requestStarts(), 1, "a negative interval disables pacing instead of failing")
+	clock.mu.Lock()
+	sleeps := len(clock.sleeps)
+	clock.mu.Unlock()
+
+	assert.Zero(t, sleeps, "a negative interval disables pacing instead of failing")
 }

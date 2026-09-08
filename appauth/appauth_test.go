@@ -2,6 +2,7 @@ package appauth_test
 
 import (
 	"context"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -88,12 +89,9 @@ func TestSign_ProducesVerifiableRS256JWT(t *testing.T) {
 	digest := sha256.Sum256([]byte(parts[0] + "." + parts[1]))
 	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
 	require.NoError(t, err)
-	assert.NoError(t, rsa.VerifyPKCS1v15(publicKey, crypto_SHA256, digest[:], signature),
+	assert.NoError(t, rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, digest[:], signature),
 		"the signature must verify against the app's public key")
 }
-
-// crypto_SHA256 avoids importing crypto just for this constant.
-const crypto_SHA256 = 6 // crypto.SHA256
 
 // The Apps-API transport signs once and reuses the JWT until shortly
 // before expiry.
@@ -172,7 +170,7 @@ func TestInstallationTokenSource_MintCacheRefresh(t *testing.T) {
 	source, err := appauth.NewInstallationTokenSource(99, appsClient.Apps)
 	require.NoError(t, err)
 
-	now := time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC)
+	now := time.Now()
 	clock := now
 	source.SetClock(func() time.Time { return clock })
 

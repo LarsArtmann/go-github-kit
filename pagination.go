@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 )
 
-// PaginationOptions tunes [FetchPages].
+// PaginationOptions tunes [FetchPages] and [StreamPages].
 type PaginationOptions struct {
 	// MaxPages is the hard cap on pages fetched; it must be at least 1.
 	// GitHub caps list endpoints at 1000 pages (300 items/page for some),
@@ -34,12 +34,15 @@ const (
 	defaultConcurrency = 3
 )
 
-// ErrInvalidPagination is returned by [FetchPages] when MaxPages is not at
-// least 1. An unbounded walk is never the right default: a misbehaving
-// server that always returns full pages would make it infinite.
+// ErrInvalidPagination is returned by [FetchPages] and [StreamPages] when
+// MaxPages is not at least 1. An unbounded walk is never the right
+// default: a misbehaving server that always returns full pages would make
+// it infinite.
 var ErrInvalidPagination = errors.New("githubkit: PaginationOptions.MaxPages must be at least 1")
 
-// FetchPages walks a paginated GitHub list endpoint concurrently.
+// FetchPages walks a paginated GitHub list endpoint concurrently and
+// returns every item. For collections too large to hold in memory, use
+// [StreamPages], which delivers page by page instead of accumulating.
 //
 // Page 1 is fetched alone: it decides whether the walk is worthwhile and
 // warms the rate-limit budget from its headers. Pages 2 through MaxPages
@@ -55,13 +58,59 @@ var ErrInvalidPagination = errors.New("githubkit: PaginationOptions.MaxPages mus
 //
 // The per-page rate gate applies automatically when fetch goes through a
 // Kernel, since each page is an ordinary request through the kernel stack.
-func FetchPages[T any]( //nolint:cyclop // concurrency state machine: defaults, early stop, bounded dispatch
+func FetchPages[T any]( //nolint:cyclop // see walkPages
 	ctx context.Context,
 	opts PaginationOptions,
 	fetch func(ctx context.Context, page int) ([]T, error),
 ) ([]T, error) {
+	var all []T
+
+	err := walkPages(ctx, opts, fetch, func(_ context.Context, _ int, items []T) error {
+		all = append(all, items...)
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return all, nil
+}
+
+// StreamPages walks a paginated GitHub list endpoint like [FetchPages],
+// but hands each completed page to onPage in page order instead of
+// accumulating the whole collection. Peak memory is bounded by the walk
+// window — at most Concurrency pages in flight plus one page awaiting
+// delivery — rather than the size of the result. It is the right tool
+// when pages are flushed downstream as they arrive: envelope stores,
+// NDJSON streams, very large repositories.
+//
+// onPage runs sequentially, never concurrently. Returning an error from
+// onPage aborts the walk; the returned error wraps the callback failure,
+// and in-flight pages are cancelled through the walk context. A short
+// page ends the walk early exactly as in FetchPages: pages beyond it are
+// never fetched, and onPage is never called for them.
+func StreamPages[T any]( //nolint:cyclop // see walkPages
+	ctx context.Context,
+	opts PaginationOptions,
+	fetch func(ctx context.Context, page int) ([]T, error),
+	onPage func(ctx context.Context, page int, items []T) error,
+) error {
+	return walkPages(ctx, opts, fetch, onPage)
+}
+
+// walkPages is the shared concurrency state machine behind FetchPages
+// and StreamPages: defaults, lone page 1, bounded dispatch of pages
+// 2..MaxPages, short-page early stop, and strictly in-order delivery to
+// onPage.
+func walkPages[T any]( //nolint:cyclop,funlen // concurrency state machine: defaults, early stop, bounded dispatch, ordered delivery
+	ctx context.Context,
+	opts PaginationOptions,
+	fetch func(ctx context.Context, page int) ([]T, error),
+	onPage func(ctx context.Context, page int, items []T) error,
+) error {
 	if opts.MaxPages < 1 {
-		return nil, fmt.Errorf("githubkit: fetch pages: %w", ErrInvalidPagination)
+		return fmt.Errorf("githubkit: fetch pages: %w", ErrInvalidPagination)
 	}
 
 	if opts.PerPage <= 0 {
@@ -74,28 +123,88 @@ func FetchPages[T any]( //nolint:cyclop // concurrency state machine: defaults, 
 
 	first, err := fetch(ctx, 1)
 	if err != nil {
-		return nil, fmt.Errorf("githubkit: fetch page 1: %w", err)
+		return fmt.Errorf("githubkit: fetch page 1: %w", err)
 	}
 
 	reportProgress(opts.OnProgress, 1, opts.MaxPages, len(first))
 
+	if err := onPage(ctx, 1, first); err != nil {
+		return fmt.Errorf("githubkit: page %d callback: %w", 1, err)
+	}
+
 	if len(first) < opts.PerPage || opts.MaxPages == 1 {
-		return first, nil
+		return nil
 	}
 
 	walkCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var (
-		shortPage atomic.Int64 // 0 = none seen; else the page number
-		mu        sync.Mutex
-		firstErr  error
-		pages     = make([][]T, opts.MaxPages+1) // index 1..MaxPages; index 0 unused
-		sem       = make(chan struct{}, opts.Concurrency)
-		wg        sync.WaitGroup
+		shortPage    atomic.Int64 // 0 = none seen; else the page number
+		itemsFetched atomic.Int64 // cumulative items recorded, for progress
+		aborted      atomic.Bool  // a fetch or onPage failed; stop delivering
+		mu           sync.Mutex
+		firstErr     error
+		ready        = make([]bool, opts.MaxPages+1) // index 1..MaxPages; 0 unused
+		pending      = make([][]T, opts.MaxPages+1)  // fetched items awaiting in-order delivery
+		delivered    = 1                             // last page handed to onPage
+		deliverMu    sync.Mutex
+		sem          = make(chan struct{}, opts.Concurrency)
+		wg           sync.WaitGroup
 	)
 
-	pages[1] = first
+	itemsFetched.Store(int64(len(first)))
+	ready[1] = true
+	pending[1] = first
+
+	fail := func(err error) {
+		mu.Lock()
+
+		if firstErr == nil {
+			firstErr = err
+		}
+
+		mu.Unlock()
+
+		aborted.Store(true)
+		cancel()
+	}
+
+	// drain hands every page that is ready but not yet delivered to
+	// onPage, in page order, one delivery at a time. Pages completed
+	// ahead of the delivery frontier wait in pending — at most
+	// Concurrency of them, never the whole collection.
+	drain := func() {
+		deliverMu.Lock()
+		defer deliverMu.Unlock()
+
+		for delivered < opts.MaxPages && !aborted.Load() {
+			next := delivered + 1
+
+			mu.Lock()
+			pageReady := ready[next]
+			var items []T
+			if pageReady {
+				items = pending[next]
+			}
+			mu.Unlock()
+
+			if !pageReady {
+				return
+			}
+
+			if err := onPage(walkCtx, next, items); err != nil {
+				fail(fmt.Errorf("githubkit: page %d callback: %w", next, err))
+
+				return
+			}
+
+			mu.Lock()
+			delivered = next
+			pending[next] = nil // release the delivered page's buffer
+			mu.Unlock()
+		}
+	}
 
 	// fetchAndRecord is one page's work: skip beyond a seen short page,
 	// fetch, record the result, and stop the walk on the first failure.
@@ -112,13 +221,7 @@ func FetchPages[T any]( //nolint:cyclop // concurrency state machine: defaults, 
 				return
 			}
 
-			mu.Lock()
-			if firstErr == nil {
-				firstErr = fmt.Errorf("githubkit: fetch page %d: %w", page, fetchErr)
-			}
-			mu.Unlock()
-
-			cancel()
+			fail(fmt.Errorf("githubkit: fetch page %d: %w", page, fetchErr))
 
 			return
 		}
@@ -130,18 +233,16 @@ func FetchPages[T any]( //nolint:cyclop // concurrency state machine: defaults, 
 			shortPage.CompareAndSwap(0, int64(page))
 		}
 
+		total := itemsFetched.Add(int64(len(items)))
+
 		mu.Lock()
-		pages[page] = items
-
-		cumulative := 0
-
-		for i := 1; i <= page; i++ {
-			cumulative += len(pages[i])
-		}
-
+		ready[page] = true
+		pending[page] = items
 		mu.Unlock()
 
-		reportProgress(opts.OnProgress, page, opts.MaxPages, cumulative)
+		reportProgress(opts.OnProgress, page, opts.MaxPages, int(total))
+
+		drain()
 	}
 
 	for page := 2; page <= opts.MaxPages; page++ {
@@ -172,14 +273,16 @@ func FetchPages[T any]( //nolint:cyclop // concurrency state machine: defaults, 
 
 	wg.Wait()
 
+	drain() // deliver a tail page that completed after the last drain
+
 	mu.Lock()
 	defer mu.Unlock()
 
 	if firstErr != nil {
-		return nil, firstErr
+		return firstErr
 	}
 
-	return assemble[T](pages), nil
+	return nil
 }
 
 // shouldSkip reports whether a page beyond the observed short page (or
@@ -190,33 +293,6 @@ func shouldSkip(ctx context.Context, short int64, page int) bool {
 	}
 
 	return ctx.Err() != nil && short != 0
-}
-
-// assemble concatenates pages 1..n up to (and excluding) the first empty
-// or absent one; GitHub returns no gaps inside a collection. Index 0 is
-// unused by convention.
-func assemble[T any](pages [][]T) []T {
-	total := 0
-
-	for _, page := range pages[1:] {
-		if len(page) == 0 {
-			break
-		}
-
-		total += len(page)
-	}
-
-	out := make([]T, 0, total)
-
-	for _, page := range pages[1:] {
-		if len(page) == 0 {
-			break
-		}
-
-		out = append(out, page...)
-	}
-
-	return out
 }
 
 func reportProgress(onProgress func(page, totalPages, cumulative int), page, total, cumulative int) {

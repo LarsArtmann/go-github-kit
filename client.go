@@ -63,6 +63,12 @@ func New(opts ...Option) (*Kernel, error) {
 
 	base := baseTransport(options)
 
+	// Pacing sits innermost so every attempt — probes and retries
+	// included — respects the secondary-limit budget.
+	if options.SecondaryPacing > 0 {
+		base = newPacingTransport(base, options.SecondaryPacing, options.clock)
+	}
+
 	// Probe stack (used for lazy /rate_limit fetches) deliberately excludes
 	// the gate — a probing gate would recurse — and the ETag cache — a
 	// cached probe answer would masquerade as fresh budget. It keeps feed

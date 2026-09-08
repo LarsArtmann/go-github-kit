@@ -81,6 +81,13 @@ type Options struct {
 	// [DefaultRateLimitOptions] values.
 	RateLimit RateLimitOptions
 
+	// SecondaryPacing, when positive, spaces the start of consecutive
+	// requests at least this far apart — a proactive budget against
+	// GitHub's secondary (abuse-detection) rate limits, which are
+	// undocumented and answered with 403 + Retry-After. Zero disables
+	// pacing (the default); negative values are treated as zero.
+	SecondaryPacing time.Duration
+
 	// Retry configures the retry layer. Zero-value fields take
 	// [DefaultRetryOptions] values.
 	Retry RetryOptions
@@ -169,6 +176,19 @@ func WithRateLimitOptions(opts RateLimitOptions) Option {
 // [Kernel.RateLimitSnapshot] remains available for observability.
 func WithoutRateLimit() Option {
 	return func(o *Options) { o.RateLimit = RateLimitOptions{Enabled: false} }
+}
+
+// WithSecondaryPacing spaces the start of consecutive requests at least
+// d apart, a proactive budget for GitHub's secondary (abuse-detection)
+// rate limits on rapid listing. Non-positive values disable pacing,
+// which is the default.
+func WithSecondaryPacing(d time.Duration) Option {
+	return func(o *Options) {
+		if d < 0 {
+			d = 0
+		}
+		o.SecondaryPacing = d
+	}
 }
 
 // WithRetryOptions overrides retry behavior. Zero-valued fields keep

@@ -52,7 +52,7 @@ func New(opts ...Option) (*Kernel, error) {
 		return nil, err
 	}
 
-	baseURL, err := resolveBaseURL(options.BaseURL)
+	baseURL, err := ResolveBaseURL(options.BaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -199,10 +199,12 @@ func joinQuoted(values []string) string {
 	return out.String()
 }
 
-// resolveBaseURL parses and validates the configured API root, applying
-// the trailing slash the native SDK's relative-URL resolution needs. An
-// empty configuration yields the public api.github.com root.
-func resolveBaseURL(raw string) (*url.URL, error) {
+// ResolveBaseURL parses and validates a GitHub API root, applying the
+// trailing slash the native SDK's relative-URL resolution needs. An
+// empty input yields the public api.github.com root. It is the one base
+// URL normalizer for the module: kit kernels, appauth clients, and
+// callers building their own go-github clients all share it.
+func ResolveBaseURL(raw string) (*url.URL, error) {
 	if raw == "" {
 		parsed, err := url.Parse("https://api.github.com/")
 		if err != nil {

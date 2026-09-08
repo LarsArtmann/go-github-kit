@@ -5,12 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
-	"net/url"
 	"sync"
 	"time"
 
 	"github.com/google/go-github/v69/github"
+	githubkit "github.com/LarsArtmann/go-github-kit"
 )
 
 // AppAuthTransport authenticates requests to the Apps API with the app's
@@ -79,28 +78,13 @@ func NewAppsClient(app *AppAuth, baseURL string) (*github.Client, error) {
 	}
 	client := github.NewClient(&http.Client{Transport: transport})
 	if baseURL != "" {
-		parsed, err := normalizeBaseURL(baseURL)
+		parsed, err := githubkit.ResolveBaseURL(baseURL)
 		if err != nil {
 			return nil, err
 		}
 		client.BaseURL = parsed
 	}
 	return client, nil
-}
-
-// normalizeBaseURL appends the trailing slash go-github requires.
-func normalizeBaseURL(rawURL string) (*url.URL, error) {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, fmt.Errorf("appauth: parse base url: %w", err)
-	}
-	if !parsed.IsAbs() || parsed.Host == "" {
-		return nil, fmt.Errorf("appauth: base url %q must be absolute", rawURL)
-	}
-	if !strings.HasSuffix(parsed.Path, "/") {
-		parsed.Path += "/"
-	}
-	return parsed, nil
 }
 
 // InstallationTokenSource mints and caches one installation token. Tokens

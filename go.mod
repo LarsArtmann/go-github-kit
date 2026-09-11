@@ -4,7 +4,7 @@ go 1.26.7
 
 require (
 	github.com/google/go-github/v69 v69.2.0
-	github.com/larsartmann/go-etag v0.3.0
+	github.com/larsartmann/go-etag v0.3.1
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/stretchr/testify v1.11.1

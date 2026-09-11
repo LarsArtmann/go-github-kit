@@ -96,10 +96,10 @@ func newETagTransport(next http.RoundTripper, opts ETagOptions) *etagclient.Tran
 		},
 		MaxEntries:   opts.MaxEntries,
 		MaxBodyBytes: maxBodyBytes,
-		PreserveOn304: []string{
+		FreshenOn304: etagclient.FreshenFields(
 			headerRateLimitLimit, headerRateLimitRemaining, headerRateLimitReset,
 			headerRateLimitUsed, headerRateLimitResource, "Retry-After", "Date",
-		},
+		),
 		FromCacheHeader: headerFromCache,
 	})
 }

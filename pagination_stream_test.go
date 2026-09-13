@@ -3,7 +3,6 @@ package githubkit_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -211,7 +210,7 @@ func TestStreamPages_CallbackOverlapsLaterFetches(t *testing.T) {
 			}
 
 			if time.Now().After(deadline) {
-				return fmt.Errorf("page 3 was not fetched while page 2's callback ran: streaming is broken")
+				return errors.New("page 3 was not fetched while page 2's callback ran: streaming is broken")
 			}
 
 			time.Sleep(time.Millisecond)

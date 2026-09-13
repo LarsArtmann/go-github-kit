@@ -38,10 +38,12 @@ func (t *pacingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	t.mu.Lock()
 	now := t.clk.now()
+
 	start := t.reserved
 	if start.Before(now) {
 		start = now
 	}
+
 	t.reserved = start.Add(t.interval)
 	t.mu.Unlock()
 

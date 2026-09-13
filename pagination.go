@@ -58,7 +58,7 @@ var ErrInvalidPagination = errors.New("githubkit: PaginationOptions.MaxPages mus
 //
 // The per-page rate gate applies automatically when fetch goes through a
 // Kernel, since each page is an ordinary request through the kernel stack.
-func FetchPages[T any]( //nolint:cyclop // see walkPages
+func FetchPages[T any](
 	ctx context.Context,
 	opts PaginationOptions,
 	fetch func(ctx context.Context, page int) ([]T, error),
@@ -90,7 +90,7 @@ func FetchPages[T any]( //nolint:cyclop // see walkPages
 // and in-flight pages are cancelled through the walk context. A short
 // page ends the walk early exactly as in FetchPages: pages beyond it are
 // never fetched, and onPage is never called for them.
-func StreamPages[T any]( //nolint:cyclop // see walkPages
+func StreamPages[T any](
 	ctx context.Context,
 	opts PaginationOptions,
 	fetch func(ctx context.Context, page int) ([]T, error),
@@ -154,6 +154,7 @@ func walkPages[T any]( //nolint:cyclop,funlen // concurrency state machine: defa
 	)
 
 	itemsFetched.Store(int64(len(first)))
+
 	ready[1] = true
 	pending[1] = first
 
@@ -183,6 +184,7 @@ func walkPages[T any]( //nolint:cyclop,funlen // concurrency state machine: defa
 
 			mu.Lock()
 			pageReady := ready[next]
+
 			var items []T
 			if pageReady {
 				items = pending[next]

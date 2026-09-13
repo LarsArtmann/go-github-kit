@@ -47,7 +47,10 @@ func TestIntegration_AppAuthAgainstRealGitHub(t *testing.T) {
 		if len(installations) == 1 {
 			instID = strconv.FormatInt(installations[0].GetID(), 10)
 		} else {
-			t.Skipf("GITHUB_APP_INSTALLATION_ID not set and %d installations found; skipping token mint", len(installations))
+			t.Skipf(
+				"GITHUB_APP_INSTALLATION_ID not set and %d installations found; skipping token mint",
+				len(installations),
+			)
 		}
 	}
 

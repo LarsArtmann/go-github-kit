@@ -8,7 +8,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/json/v2"
 	"encoding/pem"
 	"fmt"
 	"net/http"
@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/LarsArtmann/go-github-kit"
+	githubkit "github.com/LarsArtmann/go-github-kit"
 	"github.com/LarsArtmann/go-github-kit/appauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,7 +84,7 @@ func TestSign_ProducesVerifiableRS256JWT(t *testing.T) {
 	require.NoError(t, json.Unmarshal(claimsBytes, &claims))
 	assert.Equal(t, int64(12345), claims.Iss)
 	assert.Equal(t, now.Add(-time.Minute).Unix(), claims.Iat, "iat is backdated for clock skew")
-	assert.Equal(t, now.Add(10*time.Minute).Unix(), claims.Exp, "exp matches GitHub's 10-minute cap")
+	assert.Equal(t, claims.Exp, now.Add(10*time.Minute).Unix(), "exp matches GitHub's 10-minute cap")
 
 	digest := sha256.Sum256([]byte(parts[0] + "." + parts[1]))
 	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
@@ -238,11 +238,11 @@ func TestKernelPerInstallation_WiresInstallationToken(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	repo, _, err := kernel.Client.Repositories.Get(context.Background(), "acme", "widgets")
+	repo, _, err := kernel.Repositories.Get(context.Background(), "acme", "widgets")
 	require.NoError(t, err)
 	assert.Equal(t, "acme/widgets", repo.GetFullName())
 
-	repo, _, err = kernel.Client.Repositories.Get(context.Background(), "acme", "widgets")
+	repo, _, err = kernel.Repositories.Get(context.Background(), "acme", "widgets")
 	require.NoError(t, err)
 	assert.NotNil(t, repo)
 

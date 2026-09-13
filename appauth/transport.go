@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v69/github"
 	githubkit "github.com/LarsArtmann/go-github-kit"
+	"github.com/google/go-github/v69/github"
 )
 
 // AppAuthTransport authenticates requests to the Apps API with the app's
@@ -30,9 +30,11 @@ func NewAppAuthTransport(app *AppAuth, base http.RoundTripper) (*AppAuthTranspor
 	if app == nil {
 		return nil, errors.New("appauth: app auth is required")
 	}
+
 	if base == nil {
 		base = http.DefaultTransport
 	}
+
 	return &AppAuthTransport{app: app, base: base, now: time.Now}, nil
 }
 
@@ -48,6 +50,7 @@ func (t *AppAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	clone := req.Clone(req.Context())
 	clone.Header.Set("Authorization", "Bearer "+token)
+
 	return t.base.RoundTrip(clone)
 }
 
@@ -64,8 +67,10 @@ func (t *AppAuthTransport) currentJWT() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	t.jwt = signed
 	t.jwtGood = jwtValidUntil(now)
+
 	return t.jwt, nil
 }
 
@@ -76,14 +81,18 @@ func NewAppsClient(app *AppAuth, baseURL string) (*github.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	client := github.NewClient(&http.Client{Transport: transport})
+
 	if baseURL != "" {
 		parsed, err := githubkit.ResolveBaseURL(baseURL)
 		if err != nil {
 			return nil, err
 		}
+
 		client.BaseURL = parsed
 	}
+
 	return client, nil
 }
 
@@ -108,6 +117,7 @@ func NewInstallationTokenSource(installationID int64, apps *github.AppsService) 
 	case apps == nil:
 		return nil, errors.New("appauth: apps service is required")
 	}
+
 	return &InstallationTokenSource{
 		installationID: installationID,
 		apps:           apps,
@@ -132,18 +142,21 @@ func (s *InstallationTokenSource) Token() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("appauth: mint token for installation %d: %w", s.installationID, err)
 	}
+
 	token := minted.GetToken()
 	if token == "" {
 		return "", errors.New("appauth: minted token is empty")
 	}
 
 	s.token = token
-	s.good = minted.GetExpiresAt().Time.Add(-tokenRefreshLead)
+
+	s.good = minted.GetExpiresAt().Add(-tokenRefreshLead)
 	if !s.now().Before(s.good) {
 		// GitHub handed us a suspiciously short-lived token: use it, but
 		// do not trust it past now (the next call re-mints).
 		s.good = s.now()
 	}
+
 	return s.token, nil
 }
 
@@ -159,9 +172,11 @@ func NewInstallationTokenTransport(src *InstallationTokenSource, base http.Round
 	if src == nil {
 		return nil, errors.New("appauth: token source is required")
 	}
+
 	if base == nil {
 		base = http.DefaultTransport
 	}
+
 	return &InstallationTokenTransport{src: src, base: base}, nil
 }
 
@@ -174,5 +189,6 @@ func (t *InstallationTokenTransport) RoundTrip(req *http.Request) (*http.Respons
 
 	clone := req.Clone(req.Context())
 	clone.Header.Set("Authorization", "Bearer "+token)
+
 	return t.base.RoundTrip(clone)
 }

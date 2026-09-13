@@ -38,7 +38,7 @@ func TestSecondaryPacing_SpacesConcurrentRequests(t *testing.T) {
 	var wg sync.WaitGroup
 	for range requests {
 		wg.Go(func() {
-			_, _, err := kernel.Client.Users.Get(t.Context(), "")
+			_, _, err := kernel.Users.Get(t.Context(), "")
 			require.NoError(t, err)
 		})
 	}
@@ -69,7 +69,7 @@ func TestSecondaryPacing_DisabledByDefault(t *testing.T) {
 	var wg sync.WaitGroup
 	for range 5 {
 		wg.Go(func() {
-			_, _, err := kernel.Client.Users.Get(t.Context(), "")
+			_, _, err := kernel.Users.Get(t.Context(), "")
 			require.NoError(t, err)
 		})
 	}
@@ -89,7 +89,7 @@ func TestSecondaryPacing_NegativeIsDisabled(t *testing.T) {
 	clock := newStubClock(time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC))
 	kernel, _ := newPacingKernel(t, clock, -time.Second)
 
-	_, _, err := kernel.Client.Users.Get(t.Context(), "")
+	_, _, err := kernel.Users.Get(t.Context(), "")
 	require.NoError(t, err)
 
 	clock.mu.Lock()

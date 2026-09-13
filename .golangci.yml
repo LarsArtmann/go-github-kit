@@ -161,11 +161,15 @@ linters:
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
+    gocognit:
+      min-complexity: 25
     goconst:
       min-occurrences: 4
     gocritic:
       disabled-checks:
         - ifElseChain
+    gocyclo:
+      min-complexity: 20
     gomoddirectives:
       replace-local: true
     gosec:
@@ -190,12 +194,25 @@ linters:
         - "1"
         - "2"
         - "100"
+    nestif:
+      min-complexity: 6
     revive:
       rules:
         - disabled: true
           name: exported
         - disabled: true
           name: package-comments
+    tagalign:
+      align: false
+      order:
+        - binding
+        - json
+        - yaml
+        - xml
+        - toml
+        - validate
+        - mapstructure
+      sort: true
     testifylint:
       disable:
         - go-require
@@ -260,6 +277,12 @@ linters:
           - canonicalheader
           - varnamelen
           - unparam
+          - forcetypeassert
+          - errcheck
+          - ireturn
+          - recvcheck
+          - contextcheck
+          - exhaustive
       - path: ^githubkit_suite_test\.go$
         linters:
           - paralleltest

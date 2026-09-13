@@ -187,6 +187,7 @@ func WithSecondaryPacing(d time.Duration) Option {
 		if d < 0 {
 			d = 0
 		}
+
 		o.SecondaryPacing = d
 	}
 }

@@ -26,7 +26,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/json/v2"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -70,6 +70,7 @@ func NewAppAuth(appID int64, pemKey []byte) (*AppAuth, error) {
 		if !ok {
 			return nil, fmt.Errorf("appauth: PKCS#8 key is %T, want RSA", parsedAny)
 		}
+
 		key = rsaKey
 	} else {
 		return nil, fmt.Errorf("appauth: parse private key: %w", err)
@@ -99,6 +100,7 @@ func (a *AppAuth) Sign(now time.Time) (string, error) {
 	encode := base64.RawURLEncoding.EncodeToString
 	signingInput := encode(header) + "." + encode(claims)
 	digest := sha256.Sum256([]byte(signingInput))
+
 	signature, err := rsa.SignPKCS1v15(rand.Reader, a.privateKey, crypto.SHA256, digest[:])
 	if err != nil {
 		return "", fmt.Errorf("appauth: sign: %w", err)

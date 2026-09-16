@@ -1,6 +1,6 @@
 module github.com/LarsArtmann/go-github-kit
 
-go 1.26.7
+go 1.27.1
 
 require (
 	github.com/google/go-github/v69 v69.2.0

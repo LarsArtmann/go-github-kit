@@ -25,6 +25,15 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
 
 - Nothing yet.
 
+## [0.3.1] - 2026-09-22
+
+### Fixed
+
+- ETag cache construction now compiles against go-etag v0.3+/v0.4 (sets
+  `FreshenOn304`); v0.3.0 still used the removed `PreserveOn304` field, so
+  any consumer resolving go-etag v0.4.0 via MVS (e.g. a workspace also
+  containing cqrs-htmx) failed to compile go-github-kit at all.
+
 ## [0.3.0] - 2026-09-05
 
 ### Added

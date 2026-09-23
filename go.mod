@@ -1,10 +1,10 @@
 module github.com/LarsArtmann/go-github-kit
 
-go 1.27
+go 1.27.1
 
 require (
 	github.com/google/go-github/v69 v69.2.0
-	github.com/larsartmann/go-etag v0.3.1
+	github.com/larsartmann/go-etag v0.5.0
 	github.com/onsi/ginkgo/v2 v2.32.2
 	github.com/onsi/gomega v1.43.0
 	github.com/stretchr/testify v1.12.1
@@ -125,6 +125,7 @@ require (
 	github.com/kkHAIKE/contextcheck v1.1.6 // indirect
 	github.com/kulti/thelper v0.7.1 // indirect
 	github.com/kunwardeep/paralleltest v1.0.15 // indirect
+	github.com/larsartmann/go-error-family v0.10.1 // indirect
 	github.com/lasiar/canonicalheader v1.1.2 // indirect
 	github.com/ldez/exptostd v0.4.5 // indirect
 	github.com/ldez/gomoddirectives v0.8.0 // indirect

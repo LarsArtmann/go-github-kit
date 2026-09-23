@@ -55,6 +55,9 @@
             pname = "go-github-kit";
             version = self.rev or self.dirtyRev or "dev";
             src = ./.;
+            # go.mod carries a go 1.27.1 floor (copied from go-etag v0.6.0),
+            # so the module FOD must build with go_1_27, not the default go_1_26.
+            go = pkgs.go_1_27;
             vendorHash = "sha256-g4yYIK64CJz8AVB5HpAnkcIz7DwwuBGlcvFysWvULEw=";
 
             meta = with lib; {

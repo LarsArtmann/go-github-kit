@@ -32,13 +32,13 @@
           ...
         }:
         let
-          goPkg = pkgs.go_1_26;
+          goPkg = pkgs.go_1_27;
         in
         {
           devShells.default = pkgs.mkShellNoCC {
             packages = builtins.attrValues {
               inherit (pkgs)
-                go_1_26
+                go_1_27
                 golangci-lint
                 govulncheck
                 golines

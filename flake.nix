@@ -58,7 +58,7 @@
             # go.mod carries a go 1.27.1 floor (copied from go-etag v0.6.0),
             # so the module FOD must build with go_1_27, not the default go_1_26.
             go = pkgs.go_1_27;
-            vendorHash = "sha256-g4yYIK64CJz8AVB5HpAnkcIz7DwwuBGlcvFysWvULEw=";
+            vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
             meta = with lib; {
               description = "Operational kernel over google/go-github: auth, rate limiting, retry, ETag cache";

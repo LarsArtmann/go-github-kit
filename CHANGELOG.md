@@ -25,6 +25,23 @@ API, behavior, packaging, and CI-visible contracts. Doc-only edits
 
 - Nothing yet.
 
+## [v0.3.2] - 2026-09-24
+
+### Fixed
+
+- The published module was unresolvable for consumers that also depend on
+  the split go-etag modules: v0.3.1's go.mod required the pre-split root
+  `github.com/larsartmann/go-etag v0.3.1` while the code imports the split
+  `github.com/larsartmann/go-etag/client`, producing either "no required
+  module provides package go-etag/client" (consumer without a root pin) or
+  an ambiguous-import error (consumer with `go-etag/client v0.6.0`). The
+  go.mod now requires `go-etag/client v0.6.0` (+ `go-etag/entitytag
+  v0.6.0` indirect) and the code compiles against the v0.6 client API.
+
+### Changed
+
+- `go.mod` now declares `go 1.27.1`.
+
 ## [0.3.1] - 2026-09-22
 
 ### Fixed

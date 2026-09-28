@@ -51,14 +51,15 @@
             GOEXPERIMENT = "jsonv2";
           };
 
-          packages.default = pkgs.buildGoModule {
+          packages.default = (pkgs.buildGoModule.override { go = pkgs.go_1_27; }) {
             pname = "go-github-kit";
             version = self.rev or self.dirtyRev or "dev";
             src = ./.;
-            # go.mod carries a go 1.27.1 floor (copied from go-etag v0.6.0),
-            # so the module FOD must build with go_1_27, not the default go_1_26.
-            go = pkgs.go_1_27;
-            vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+            # go.mod carries a go 1.27.1 floor (copied from go-etag v0.6.0).
+            # The toolchain is overridden at callPackage level: a plain
+            # `go = …` attr is silently ignored by buildGoModule (the FOD
+            # and the build then run the default go and trip the floor).
+            vendorHash = "sha256-m9RoXRLuVtcbUHhyayP4g9s33KwwxP8S3y2kUT+dW5g=";
 
             meta = with lib; {
               description = "Operational kernel over google/go-github: auth, rate limiting, retry, ETag cache";

@@ -1,7 +1,7 @@
 version: "2"
 run:
   timeout: 5m
-  go: 1.26.7
+  go: 1.27.1
   build-tags:
     - goexperiment.arenas
     - goexperiment.goroutineleakprofile
@@ -39,7 +39,7 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - exhaustruct
+    - exhaustruct_v5
     - exptostd
     - fatcontext
     - forbidigo
@@ -148,8 +148,8 @@ linters:
         - fmt.Println
         - (*strings.Builder).WriteString
         - (*bytes.Buffer).WriteString
-    exhaustruct:
-      exclude:
+    exhaustruct_v5:
+      ignore-patterns:
         - os/exec.Cmd
         - github.com/LarsArtmann/go-github-kit\.(RateLimitSnapshot|ETagStats|ETagCache|ETagOptions|Options|StatusError|RateLimitOptions|RetryOptions|RateLimitCache|rateProber|gateTransport|feedTransport|retryTransport|etagTransport)
         - etagclient\.Stats
@@ -283,6 +283,7 @@ linters:
           - recvcheck
           - contextcheck
           - exhaustive
+          - exhaustruct_v5
       - path: ^githubkit_suite_test\.go$
         linters:
           - paralleltest

@@ -92,7 +92,7 @@ func (p *rateProber) probe(ctx context.Context, base *url.URL) (RateLimitSnapsho
 		return RateLimitSnapshot{}, fmt.Errorf(
 			"githubkit: rate-limit probe on cooldown (last attempt %s ago): %w",
 			p.clock.now().Sub(p.lastAttempt).Round(time.Second), ErrAPIUnavailable,
-		)
+		) //nolint:gohumanize // reports an exact rounded Duration for operators; humanize has no Duration formatter and RelTime would blur the cooldown detail
 	}
 
 	p.lastAttempt = p.clock.now()

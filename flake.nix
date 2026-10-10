@@ -62,7 +62,7 @@
             # The toolchain is overridden at callPackage level: a plain
             # `go = …` attr is silently ignored by buildGoModule (the FOD
             # and the build then run the default go and trip the floor).
-            vendorHash = "sha256-9J2beR8klSZ5TgVACQkokmrLFC6ZwA26ne4r0oRJfvM=";
+            vendorHash = "sha256-Dd/qDYzwZfLsEuReIIdlHEDCmNFfR0h3+4ol/vjiSEM=";
 
             meta = with lib; {
               description = "Operational kernel over google/go-github: auth, rate limiting, retry, ETag cache";

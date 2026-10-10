@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload coverage artifact
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-html
           path: coverage.html
@@ -85,7 +85,7 @@ jobs:
         run: go tool golangci-lint run --timeout=5m ./...
 
       - name: govulncheck
-        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1
+        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
         with:
           # Latest patch: stdlib vuln scans must not run on a stale toolchain
           # (GO-2026-6089/6090 flagged 1.26.5 hours after it was current).

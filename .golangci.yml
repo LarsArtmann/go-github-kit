@@ -16,7 +16,6 @@ output:
   formats: {}
 linters:
   enable:
-    - arangolint
     - asasalint
     - asciicheck
     - bidichk

@@ -1,6 +1,7 @@
 package githubkit
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -33,9 +34,9 @@ func newPacingTransport(next http.RoundTripper, interval time.Duration, clk cloc
 
 func (t *pacingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.interval <= 0 {
+		//nolint:wrapcheck // pure passthrough when pacing is disabled: no new context to add
 		return t.next.RoundTrip(req)
 	}
-
 	t.mu.Lock()
 	now := t.clk.now()
 
@@ -50,9 +51,14 @@ func (t *pacingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if wait := start.Sub(now); wait > 0 {
 		if err := t.clk.sleep(req.Context(), wait); err != nil {
 			// The slot stays spent — pacing is conservative by design.
-			return nil, err
+			return nil, fmt.Errorf("pacing: wait for slot: %w", err)
 		}
 	}
 
-	return t.next.RoundTrip(req)
+	resp, err := t.next.RoundTrip(req)
+	if err != nil {
+		return nil, fmt.Errorf("pacing: round trip: %w", err)
+	}
+
+	return resp, nil
 }

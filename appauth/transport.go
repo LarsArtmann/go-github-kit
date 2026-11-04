@@ -51,7 +51,12 @@ func (t *AppAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	clone := req.Clone(req.Context())
 	clone.Header.Set("Authorization", "Bearer "+token)
 
-	return t.base.RoundTrip(clone)
+	resp, err := t.base.RoundTrip(clone)
+	if err != nil {
+		return nil, fmt.Errorf("appauth: round trip as app: %w", err)
+	}
+
+	return resp, nil
 }
 
 func (t *AppAuthTransport) currentJWT() (string, error) {
@@ -87,7 +92,7 @@ func NewAppsClient(app *AppAuth, baseURL string) (*github.Client, error) {
 	if baseURL != "" {
 		parsed, err := githubkit.ResolveBaseURL(baseURL)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("appauth: resolve base URL %q: %w", baseURL, err)
 		}
 
 		client.BaseURL = parsed
@@ -190,5 +195,10 @@ func (t *InstallationTokenTransport) RoundTrip(req *http.Request) (*http.Respons
 	clone := req.Clone(req.Context())
 	clone.Header.Set("Authorization", "Bearer "+token)
 
-	return t.base.RoundTrip(clone)
+	resp, err := t.base.RoundTrip(clone)
+	if err != nil {
+		return nil, fmt.Errorf("appauth: round trip as installation: %w", err)
+	}
+
+	return resp, nil
 }

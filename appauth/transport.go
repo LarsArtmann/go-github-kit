@@ -12,6 +12,18 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
+// Sentinel validation errors for the appauth constructors; callers can
+// match them with errors.Is instead of string comparison.
+var (
+	ErrAppIDRequired          = errors.New("appauth: app id is required")
+	ErrInvalidPEM             = errors.New("appauth: private key is not valid PEM")
+	ErrAppAuthRequired        = errors.New("appauth: app auth is required")
+	ErrInstallationIDRequired = errors.New("appauth: installation id is required")
+	ErrAppsServiceRequired    = errors.New("appauth: apps service is required")
+	ErrEmptyToken             = errors.New("appauth: minted token is empty")
+	ErrTokenSourceRequired    = errors.New("appauth: token source is required")
+)
+
 // AppAuthTransport authenticates requests to the Apps API with the app's
 // JWT. It signs at most once per JWT lifetime and reuses the token for
 // every request until shortly before expiry.
@@ -28,14 +40,21 @@ type AppAuthTransport struct {
 // NewAppAuthTransport wraps base (nil means http.DefaultTransport).
 func NewAppAuthTransport(app *AppAuth, base http.RoundTripper) (*AppAuthTransport, error) {
 	if app == nil {
-		return nil, errors.New("appauth: app auth is required")
+		return nil, ErrAppAuthRequired
 	}
 
 	if base == nil {
 		base = http.DefaultTransport
 	}
 
-	return &AppAuthTransport{app: app, base: base, now: time.Now}, nil
+	return &AppAuthTransport{
+		app:     app,
+		base:    base,
+		now:     time.Now,
+		mu:      sync.Mutex{},
+		jwt:     "",
+		jwtGood: time.Time{},
+	}, nil
 }
 
 // SetClock overrides the wall clock (tests).
@@ -118,15 +137,18 @@ type InstallationTokenSource struct {
 func NewInstallationTokenSource(installationID int64, apps *github.AppsService) (*InstallationTokenSource, error) {
 	switch {
 	case installationID <= 0:
-		return nil, errors.New("appauth: installation id is required")
+		return nil, ErrInstallationIDRequired
 	case apps == nil:
-		return nil, errors.New("appauth: apps service is required")
+		return nil, ErrAppsServiceRequired
 	}
 
 	return &InstallationTokenSource{
 		installationID: installationID,
 		apps:           apps,
 		now:            time.Now,
+		mu:             sync.Mutex{},
+		token:          "",
+		good:           time.Time{},
 	}, nil
 }
 
@@ -134,8 +156,10 @@ func NewInstallationTokenSource(installationID int64, apps *github.AppsService) 
 func (s *InstallationTokenSource) SetClock(now func() time.Time) { s.now = now }
 
 // Token returns a valid installation token, minting a fresh one when the
-// cached token is missing or within the refresh window of its expiry.
-func (s *InstallationTokenSource) Token() (string, error) {
+// cached token is missing or within the refresh window of its expiry. The
+// context carries the minting request; pass the request's context so a
+// canceled caller also cancels an in-flight mint.
+func (s *InstallationTokenSource) Token(ctx context.Context) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -143,14 +167,14 @@ func (s *InstallationTokenSource) Token() (string, error) {
 		return s.token, nil
 	}
 
-	minted, _, err := s.apps.CreateInstallationToken(context.Background(), s.installationID, nil)
+	minted, _, err := s.apps.CreateInstallationToken(ctx, s.installationID, nil)
 	if err != nil {
 		return "", fmt.Errorf("appauth: mint token for installation %d: %w", s.installationID, err)
 	}
 
 	token := minted.GetToken()
 	if token == "" {
-		return "", errors.New("appauth: minted token is empty")
+		return "", ErrEmptyToken
 	}
 
 	s.token = token
@@ -175,7 +199,7 @@ type InstallationTokenTransport struct {
 // NewInstallationTokenTransport wraps base (nil means http.DefaultTransport).
 func NewInstallationTokenTransport(src *InstallationTokenSource, base http.RoundTripper) (http.RoundTripper, error) {
 	if src == nil {
-		return nil, errors.New("appauth: token source is required")
+		return nil, ErrTokenSourceRequired
 	}
 
 	if base == nil {
@@ -187,7 +211,7 @@ func NewInstallationTokenTransport(src *InstallationTokenSource, base http.Round
 
 // RoundTrip implements http.RoundTripper.
 func (t *InstallationTokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	token, err := t.src.Token()
+	token, err := t.src.Token(req.Context())
 	if err != nil {
 		return nil, fmt.Errorf("appauth: installation token: %w", err)
 	}

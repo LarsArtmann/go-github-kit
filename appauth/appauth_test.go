@@ -174,11 +174,11 @@ func TestInstallationTokenSource_MintCacheRefresh(t *testing.T) {
 	clock := now
 	source.SetClock(func() time.Time { return clock })
 
-	first, err := source.Token()
+	first, err := source.Token(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "install-token-1", first)
 
-	second, err := source.Token()
+	second, err := source.Token(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "install-token-1", second, "cached within the window")
 
@@ -187,7 +187,7 @@ func TestInstallationTokenSource_MintCacheRefresh(t *testing.T) {
 	mu.Unlock()
 
 	clock = now.Add(2 * time.Hour)
-	third, err := source.Token()
+	third, err := source.Token(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "install-token-2", third, "re-minted after expiry")
 }

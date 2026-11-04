@@ -16,6 +16,8 @@ import (
 // ever creates or mutates anything on GitHub (reads and token mints
 // only). GITHUB_APP_INSTALLATION_ID optionally exercises the full
 // JWT → installation-token path.
+//
+//nolint:paralleltest // live GitHub API smoke: parallel runs multiply secondary-rate-limit exposure
 func TestIntegration_AppAuthAgainstRealGitHub(t *testing.T) {
 	appID := os.Getenv("GITHUB_APP_ID")
 	pemPath := os.Getenv("GITHUB_APP_PRIVATE_KEY")
@@ -60,11 +62,11 @@ func TestIntegration_AppAuthAgainstRealGitHub(t *testing.T) {
 	source, err := appauth.NewInstallationTokenSource(installationID, appsClient.Apps)
 	require.NoError(t, err)
 
-	token, err := source.Token()
+	token, err := source.Token(t.Context())
 	require.NoError(t, err, "installation token mint against the real API")
 	assert.NotEmpty(t, token)
 
-	cached, err := source.Token()
+	cached, err := source.Token(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, token, cached, "second call must be served from cache")
 }

@@ -182,13 +182,13 @@ func WithoutRateLimit() Option {
 // d apart, a proactive budget for GitHub's secondary (abuse-detection)
 // rate limits on rapid listing. Non-positive values disable pacing,
 // which is the default.
-func WithSecondaryPacing(d time.Duration) Option {
+func WithSecondaryPacing(minDelay time.Duration) Option {
 	return func(o *Options) {
-		if d < 0 {
-			d = 0
+		if minDelay < 0 {
+			minDelay = 0
 		}
 
-		o.SecondaryPacing = d
+		o.SecondaryPacing = minDelay
 	}
 }
 

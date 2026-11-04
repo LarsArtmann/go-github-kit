@@ -1,22 +1,3 @@
-// Package appauth authenticates go-github-kit kernels as a GitHub App
-// (plan V3 B-22): App JWTs for the Apps API, minted installation tokens
-// for repository access, and transports that keep both fresh.
-//
-// The flow mirrors GitHub's own guidance:
-//
-//	app  := appauth.NewAppAuth(appID, pemKey)
-//	apps := appauth.NewAppsClient(app)                    // JWT-authenticated
-//	src  := appauth.NewInstallationTokenSource(app, installationID, apps.AppsService)
-//	kernel, err := githubkit.New(
-//	    githubkit.WithBaseURL(...),
-//	    githubkit.WithHTTPClient(&http.Client{
-//	        Transport: appauth.NewInstallationTokenTransport(src, nil),
-//	    }),
-//	)
-//
-// Nothing here contacts GitHub until a token is actually needed; creating
-// the App, installing it, and rotating its private key are operational
-// steps outside this package (founder gate, plan A1).
 package appauth
 
 import (
@@ -28,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/json/v2"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"time"
 )
@@ -54,12 +34,12 @@ type AppAuth struct {
 // what the App settings page downloads).
 func NewAppAuth(appID int64, pemKey []byte) (*AppAuth, error) {
 	if appID <= 0 {
-		return nil, errors.New("appauth: app id is required")
+		return nil, ErrAppIDRequired
 	}
 
 	block, _ := pem.Decode(pemKey)
 	if block == nil {
-		return nil, errors.New("appauth: private key is not valid PEM")
+		return nil, ErrInvalidPEM
 	}
 
 	var key *rsa.PrivateKey
@@ -68,7 +48,7 @@ func NewAppAuth(appID int64, pemKey []byte) (*AppAuth, error) {
 	} else if parsedAny, err := x509.ParsePKCS8PrivateKey(block.Bytes); err == nil {
 		rsaKey, ok := parsedAny.(*rsa.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("appauth: PKCS#8 key is %T, want RSA", parsedAny)
+			return nil, fmt.Errorf("%w: PKCS#8 key is %T, want RSA", ErrInvalidPEM, parsedAny)
 		}
 
 		key = rsaKey

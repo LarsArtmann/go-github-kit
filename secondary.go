@@ -29,7 +29,13 @@ type pacingTransport struct {
 }
 
 func newPacingTransport(next http.RoundTripper, interval time.Duration, clk clock) http.RoundTripper {
-	return &pacingTransport{next: next, interval: interval, clk: clk}
+	return &pacingTransport{
+		next:     next,
+		interval: interval,
+		clk:      clk,
+		mu:       sync.Mutex{},
+		reserved: time.Time{},
+	}
 }
 
 func (t *pacingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -37,6 +43,7 @@ func (t *pacingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		//nolint:wrapcheck // pure passthrough when pacing is disabled: no new context to add
 		return t.next.RoundTrip(req)
 	}
+
 	t.mu.Lock()
 	now := t.clk.now()
 

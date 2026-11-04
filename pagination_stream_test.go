@@ -17,10 +17,10 @@ import (
 func pages(n, pageItems int) func(ctx context.Context, page int) ([]int, error) {
 	return func(_ context.Context, page int) ([]int, error) {
 		start := (page-1)*pageItems + 1
-		out := make([]int, pageItems)
+		out := make([]int, 0, pageItems)
 
-		for i := range out {
-			out[i] = start + i
+		for i := range pageItems {
+			out = append(out, start+i)
 		}
 
 		return out, nil

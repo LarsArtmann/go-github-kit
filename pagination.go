@@ -103,7 +103,9 @@ func StreamPages[T any](
 // and StreamPages: defaults, lone page 1, bounded dispatch of pages
 // 2..MaxPages, short-page early stop, and strictly in-order delivery to
 // onPage.
-func walkPages[T any]( //nolint:cyclop,funlen // concurrency state machine: defaults, early stop, bounded dispatch, ordered delivery
+//
+//nolint:cyclop,gocognit,gocyclo // concurrency state machine: splitting scatters shared mutable invariants across closures
+func walkPages[T any](
 	ctx context.Context,
 	opts PaginationOptions,
 	fetch func(ctx context.Context, page int) ([]T, error),
